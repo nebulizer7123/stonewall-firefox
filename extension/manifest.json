@@ -1,0 +1,25 @@
+{
+  "manifest_version": 2,
+  "name": "Stonewall",
+  "version": "0.1.0",
+  "description": "Block distracting websites, track time, and schedule blocks.",
+  "permissions": [
+    "storage",
+    "tabs",
+    "contextMenus",
+    "webNavigation",
+    "alarms"
+  ],
+  "background": {
+    "scripts": ["background.js"]
+  },
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  },
+  "applications": {
+    "gecko": {
+      "id": "stonewall@example.com"
+    }
+  }
+}
