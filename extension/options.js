@@ -83,6 +83,7 @@ function renderPatterns(list) {
       } else {
         list.patterns.splice(i, 1);
       }
+
       await saveLists();
     };
     input.addEventListener('blur', saveInput);
@@ -130,6 +131,7 @@ function updatePomodoroDisplay() {
 
 function saveCurrentListFields() {
   const list = lists[currentIndex];
+
   list.name = listNameEl.value.trim() || 'Unnamed';
   list.type = listTypeEl.value;
   list.start = listStartEl.value || null;
