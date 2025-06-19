@@ -69,7 +69,16 @@ function updateStats(stats) {
   const entries = Object.entries(stats).sort((a, b) => b[1] - a[1]);
   entries.forEach(([domain, seconds]) => {
     const li = document.createElement('li');
-    li.textContent = `${domain}: ${formatTime(seconds)}`;
+    li.textContent = `${domain}: ${formatTime(seconds)} `;
+    const btn = document.createElement('button');
+    btn.textContent = 'Remove';
+    btn.addEventListener('click', async () => {
+      const data = await browser.storage.local.get({timeSpent: {}});
+      delete data.timeSpent[domain];
+      await browser.storage.local.set({timeSpent: data.timeSpent});
+      load();
+    });
+    li.appendChild(btn);
     ul.appendChild(li);
   });
 }
