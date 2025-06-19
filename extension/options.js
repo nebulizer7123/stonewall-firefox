@@ -1,56 +1,126 @@
-async function load() {
-  const data = await browser.storage.local.get({blocked: [], timeSpent: {}});
-  updateUI(data.blocked);
-  updateStats(data.timeSpent);
+let lists = [];
+let currentIndex = 0;
 
+async function ensureLists() {
+  const data = await browser.storage.local.get({lists: null, blocked: []});
+  if (!data.lists) {
+    data.lists = [{
+      id: Date.now(),
+      name: 'Default Block',
+      type: 'block',
+      patterns: data.blocked.map(e => e.pattern),
+      start: null,
+      end: null,
+      pomodoro: null
+    }];
+    await browser.storage.local.set({lists: data.lists, blocked: []});
+  }
+  lists = data.lists;
+  return data;
 }
 
-function updateUI(list) {
-  const ul = document.getElementById('blockedList');
-  ul.innerHTML = '';
-  const now = Date.now();
-  list.forEach((entry, index) => {
-    const li = document.createElement('li');
-    const info = document.createElement('span');
-    if (entry.pomodoro) {
-      const mins = Math.max(0, Math.ceil((entry.until - now) / 60000));
-      info.textContent = `${entry.pattern} (Pomodoro ${mins}m left) `;
-    } else {
-      info.textContent = `${entry.pattern} `;
-    }
-    li.appendChild(info);
+async function load() {
+  const data = await ensureLists();
+  updateListSelector();
+  updateStats(data.timeSpent || {});
+  showList(currentIndex);
+}
 
-    if (!entry.pomodoro) {
-      const startInput = document.createElement('input');
-      startInput.type = 'time';
-      startInput.value = entry.start || '';
-      const endInput = document.createElement('input');
-      endInput.type = 'time';
-      endInput.value = entry.end || '';
-      const saveBtn = document.createElement('button');
-      saveBtn.textContent = 'Save';
-      saveBtn.addEventListener('click', async () => {
-        list[index].start = startInput.value || null;
-        list[index].end = endInput.value || null;
-        await browser.storage.local.set({blocked: list});
-        load();
-      });
-      li.appendChild(startInput);
-      li.appendChild(endInput);
-      li.appendChild(saveBtn);
-    }
+function updateListSelector() {
+  const select = document.getElementById('lists');
+  select.innerHTML = '';
+  lists.forEach((l, i) => {
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = l.name;
+    select.appendChild(opt);
+  });
+  if (lists.length) select.value = currentIndex;
+}
 
-    const btn = document.createElement('button');
-    btn.textContent = 'Remove';
-    btn.addEventListener('click', async () => {
-      list.splice(index, 1);
-      await browser.storage.local.set({blocked: list});
-      load();
+document.getElementById('lists').addEventListener('change', (e) => {
+  currentIndex = parseInt(e.target.value, 10);
+  showList(currentIndex);
+});
+
+document.getElementById('addListBtn').addEventListener('click', async () => {
+  lists.push({id: Date.now(), name: 'New List', type: 'block', patterns: [], start: null, end: null, pomodoro: null});
+  currentIndex = lists.length - 1;
+  await saveLists();
+});
+
+async function saveLists() {
+  await browser.storage.local.set({lists});
+  updateListSelector();
+  showList(currentIndex);
+}
+
+function showList(index) {
+  if (!lists[index]) return;
+  const list = lists[index];
+  document.getElementById('listName').value = list.name;
+  document.getElementById('listType').value = list.type;
+  document.getElementById('listStart').value = list.start || '';
+  document.getElementById('listEnd').value = list.end || '';
+  renderPatterns(list);
+}
+
+function renderPatterns(list) {
+  const tbody = document.querySelector('#patternsTable tbody');
+  tbody.innerHTML = '';
+  list.patterns.forEach((p, i) => {
+    const tr = document.createElement('tr');
+    const tdIn = document.createElement('td');
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.value = p;
+    tdIn.appendChild(input);
+    const tdAct = document.createElement('td');
+    const save = document.createElement('button');
+    save.textContent = 'Save';
+    save.addEventListener('click', async () => {
+      list.patterns[i] = input.value.trim();
+      await saveLists();
     });
-    li.appendChild(btn);
-    ul.appendChild(li);
+    const remove = document.createElement('button');
+    remove.textContent = 'Remove';
+    remove.addEventListener('click', async () => {
+      list.patterns.splice(i, 1);
+      await saveLists();
+    });
+    tdAct.appendChild(save);
+    tdAct.appendChild(remove);
+    tr.appendChild(tdIn);
+    tr.appendChild(tdAct);
+    tbody.appendChild(tr);
   });
 }
+
+document.getElementById('saveListSettings').addEventListener('click', async () => {
+  const list = lists[currentIndex];
+  list.name = document.getElementById('listName').value.trim() || 'Unnamed';
+  list.type = document.getElementById('listType').value;
+  list.start = document.getElementById('listStart').value || null;
+  list.end = document.getElementById('listEnd').value || null;
+  await saveLists();
+});
+
+document.getElementById('addPatternForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const val = document.getElementById('newPattern').value.trim();
+  if (!val) return;
+  lists[currentIndex].patterns.push(val);
+  document.getElementById('newPattern').value = '';
+  await saveLists();
+});
+
+document.getElementById('startPomodoro').addEventListener('click', async () => {
+  const minutes = parseInt(document.getElementById('pomodoroMinutes').value, 10);
+  if (isNaN(minutes) || minutes <= 0) return;
+  lists[currentIndex].pomodoro = {until: Date.now() + minutes * 60000};
+  document.getElementById('pomodoroMinutes').value = '';
+  await saveLists();
+});
 
 function formatTime(seconds) {
   const h = Math.floor(seconds / 3600);
@@ -68,8 +138,12 @@ function updateStats(stats) {
   ul.innerHTML = '';
   const entries = Object.entries(stats).sort((a, b) => b[1] - a[1]);
   entries.forEach(([domain, seconds]) => {
-    const li = document.createElement('li');
-    li.textContent = `${domain}: ${formatTime(seconds)} `;
+    const tr = document.createElement('tr');
+    const tdDom = document.createElement('td');
+    tdDom.textContent = domain;
+    const tdTime = document.createElement('td');
+    tdTime.textContent = formatTime(seconds);
+    const tdAct = document.createElement('td');
     const btn = document.createElement('button');
     btn.textContent = 'Remove';
     btn.addEventListener('click', async () => {
@@ -78,46 +152,23 @@ function updateStats(stats) {
       await browser.storage.local.set({timeSpent: data.timeSpent});
       load();
     });
-    li.appendChild(btn);
-    ul.appendChild(li);
+    tdAct.appendChild(btn);
+    tr.appendChild(tdDom);
+    tr.appendChild(tdTime);
+    tr.appendChild(tdAct);
+    ul.appendChild(tr);
   });
 }
 
-document.getElementById('addForm').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const pattern = document.getElementById('pattern').value.trim();
-  const start = document.getElementById('start').value;
-  const end = document.getElementById('end').value;
-  if (!pattern) return;
-  const data = await browser.storage.local.get({blocked: []});
-  data.blocked.push({pattern, start: start || null, end: end || null});
-  await browser.storage.local.set({blocked: data.blocked});
-  document.getElementById('pattern').value = '';
-  document.getElementById('start').value = '';
-  document.getElementById('end').value = '';
-  load();
-});
-
-document.getElementById('pomodoroForm').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const pattern = document.getElementById('pomodoroPattern').value.trim();
-  const minutes = parseInt(document.getElementById('pomodoroMinutes').value, 10);
-  if (!pattern || isNaN(minutes) || minutes <= 0) return;
-  const until = Date.now() + minutes * 60000;
-  const data = await browser.storage.local.get({blocked: []});
-  data.blocked.push({pattern, pomodoro: true, until});
-  await browser.storage.local.set({blocked: data.blocked});
-  document.getElementById('pomodoroPattern').value = '';
-  document.getElementById('pomodoroMinutes').value = '';
-  load();
-});
-
 browser.storage.onChanged.addListener((changes, area) => {
   if (area === 'local') {
-    if (changes.blocked) updateUI(changes.blocked.newValue);
+    if (changes.lists) {
+      lists = changes.lists.newValue;
+      updateListSelector();
+      showList(currentIndex);
+    }
     if (changes.timeSpent) updateStats(changes.timeSpent.newValue);
   }
 });
-
 
 load();

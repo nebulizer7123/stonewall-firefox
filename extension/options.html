@@ -3,27 +3,52 @@
 <head>
   <meta charset="utf-8">
   <title>Stonewall Options</title>
+  <style>
+    table { border-collapse: collapse; }
+    td, th { border: 1px solid #ccc; padding: 4px 8px; }
+    input[type="text"] { width: 100%; }
+  </style>
 </head>
 <body>
   <h1>Stonewall Options</h1>
-  <form id="addForm">
-    <input id="pattern" type="text" placeholder="URL pattern" required>
-    <label for="start">Start time</label>
-    <input id="start" type="time">
-    <label for="end">End time</label>
-    <input id="end" type="time">
+  <div id="listSelector">
+    <label for="lists">Select List:</label>
+    <select id="lists"></select>
+    <button id="addListBtn">Add List</button>
+  </div>
+  <div id="listSettings">
+    <label>Name <input id="listName" type="text"></label>
+    <label>Type
+      <select id="listType">
+        <option value="block">Block</option>
+        <option value="allow">Allow Only</option>
+      </select>
+    </label>
+    <label for="listStart">Start time</label>
+    <input id="listStart" type="time">
+    <label for="listEnd">End time</label>
+    <input id="listEnd" type="time">
+    <button id="saveListSettings">Save Settings</button>
+    <h2>Pomodoro</h2>
+    <input id="pomodoroMinutes" type="number" min="1" placeholder="Minutes">
+    <button id="startPomodoro">Start</button>
+  </div>
+
+  <h2>Patterns</h2>
+  <table id="patternsTable">
+    <thead><tr><th>URL Pattern</th><th>Actions</th></tr></thead>
+    <tbody></tbody>
+  </table>
+  <form id="addPatternForm">
+    <input id="newPattern" type="text" placeholder="URL pattern" required>
     <button type="submit">Add</button>
   </form>
 
-  <h2>Pomodoro Block</h2>
-  <form id="pomodoroForm">
-    <input id="pomodoroPattern" type="text" placeholder="URL pattern" required>
-    <input id="pomodoroMinutes" type="number" min="1" placeholder="Minutes" required>
-    <button type="submit">Start</button>
-  </form>
-  <ul id="blockedList"></ul>
   <h2>Time Spent</h2>
-  <ul id="statsList"></ul>
+  <table>
+    <thead><tr><th>Domain</th><th>Time</th><th></th></tr></thead>
+    <tbody id="statsList"></tbody>
+  </table>
 
   <script src="options.js"></script>
 </body>
