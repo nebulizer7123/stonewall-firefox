@@ -74,21 +74,24 @@ function renderPatterns(list) {
     const input = document.createElement('input');
     input.type = 'text';
     input.value = p;
-    tdIn.appendChild(input);
-    const tdAct = document.createElement('td');
-    const save = document.createElement('button');
-    save.textContent = 'Save';
-    save.addEventListener('click', async () => {
+    const saveInput = async () => {
       list.patterns[i] = input.value.trim();
       await saveLists();
+    };
+    input.addEventListener('blur', saveInput);
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        input.blur();
+      }
     });
+    tdIn.appendChild(input);
+    const tdAct = document.createElement('td');
     const remove = document.createElement('button');
     remove.textContent = 'Remove';
     remove.addEventListener('click', async () => {
       list.patterns.splice(i, 1);
       await saveLists();
     });
-    tdAct.appendChild(save);
     tdAct.appendChild(remove);
     tr.appendChild(tdIn);
     tr.appendChild(tdAct);
@@ -96,14 +99,26 @@ function renderPatterns(list) {
   });
 }
 
-document.getElementById('saveListSettings').addEventListener('click', async () => {
+const listNameEl = document.getElementById('listName');
+const listTypeEl = document.getElementById('listType');
+const listStartEl = document.getElementById('listStart');
+const listEndEl = document.getElementById('listEnd');
+
+function saveCurrentListFields() {
   const list = lists[currentIndex];
-  list.name = document.getElementById('listName').value.trim() || 'Unnamed';
-  list.type = document.getElementById('listType').value;
-  list.start = document.getElementById('listStart').value || null;
-  list.end = document.getElementById('listEnd').value || null;
-  await saveLists();
-});
+  list.name = listNameEl.value.trim() || 'Unnamed';
+  list.type = listTypeEl.value;
+  list.start = listStartEl.value || null;
+  list.end = listEndEl.value || null;
+  return saveLists();
+}
+
+document.getElementById('saveListSettings').addEventListener('click', saveCurrentListFields);
+
+listNameEl.addEventListener('blur', saveCurrentListFields);
+listTypeEl.addEventListener('change', saveCurrentListFields);
+listStartEl.addEventListener('change', saveCurrentListFields);
+listEndEl.addEventListener('change', saveCurrentListFields);
 
 document.getElementById('addPatternForm').addEventListener('submit', async (e) => {
   e.preventDefault();
