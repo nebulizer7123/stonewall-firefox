@@ -23,3 +23,4 @@ You can remove domains from this list to reset their counters.
 Blocked entries use the full URL path. For example, blocking `https://www.reddit.com/r/gaming` leaves other Reddit paths accessible.
 
 Time spent on each domain is stored locally and updated once per second.
+When a list's type is set to "Allow Only", any active allow lists restrict access exclusively to their patterns. All other URLs are blocked, and these allowances take priority over block lists.

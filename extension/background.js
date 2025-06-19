@@ -61,15 +61,11 @@ function matches(list, url) {
 function isBlocked(url) {
   const activeAllows = lists.filter(l => l.type === 'allow' && listActive(l));
   if (activeAllows.length) {
-    const allowed = activeAllows.some(l => matches(l, url));
-    if (!allowed) return true;
+    return !activeAllows.some(l => matches(l, url));
   }
-  for (const list of lists) {
-    if (list.type === 'block' && listActive(list) && matches(list, url)) {
-      return true;
-    }
-  }
-  return false;
+  return lists.some(
+    l => l.type === 'block' && listActive(l) && matches(l, url)
+  );
 }
 
 async function loadData() {
