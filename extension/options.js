@@ -24,6 +24,7 @@ async function load() {
   updateListSelector();
   updateStats(data.timeSpent || {});
   showList(currentIndex);
+  updatePomodoroDisplay();
 }
 
 function updateListSelector() {
@@ -63,6 +64,7 @@ function showList(index) {
   document.getElementById('listStart').value = list.start || '';
   document.getElementById('listEnd').value = list.end || '';
   renderPatterns(list);
+  updatePomodoroDisplay();
 }
 
 function renderPatterns(list) {
@@ -75,7 +77,13 @@ function renderPatterns(list) {
     input.type = 'text';
     input.value = p;
     const saveInput = async () => {
-      list.patterns[i] = input.value.trim();
+      const val = input.value.trim();
+      if (val) {
+        list.patterns[i] = val;
+      } else {
+        list.patterns.splice(i, 1);
+      }
+
       await saveLists();
     };
     input.addEventListener('blur', saveInput);
@@ -103,9 +111,27 @@ const listNameEl = document.getElementById('listName');
 const listTypeEl = document.getElementById('listType');
 const listStartEl = document.getElementById('listStart');
 const listEndEl = document.getElementById('listEnd');
+const pomodoroEl = document.getElementById('pomodoroCountdown');
+
+function updatePomodoroDisplay() {
+  const list = lists[currentIndex];
+  if (!list || !list.pomodoro) {
+    pomodoroEl.textContent = '';
+    return;
+  }
+  const remaining = list.pomodoro.until - Date.now();
+  if (remaining > 0) {
+    pomodoroEl.textContent = formatTime(Math.ceil(remaining / 1000));
+  } else {
+    pomodoroEl.textContent = '';
+    list.pomodoro = null;
+    saveLists();
+  }
+}
 
 function saveCurrentListFields() {
   const list = lists[currentIndex];
+
   list.name = listNameEl.value.trim() || 'Unnamed';
   list.type = listTypeEl.value;
   list.start = listStartEl.value || null;
@@ -135,6 +161,7 @@ document.getElementById('startPomodoro').addEventListener('click', async () => {
   lists[currentIndex].pomodoro = {until: Date.now() + minutes * 60000};
   document.getElementById('pomodoroMinutes').value = '';
   await saveLists();
+  updatePomodoroDisplay();
 });
 
 function formatTime(seconds) {
@@ -185,5 +212,7 @@ browser.storage.onChanged.addListener((changes, area) => {
     if (changes.timeSpent) updateStats(changes.timeSpent.newValue);
   }
 });
+
+setInterval(updatePomodoroDisplay, 1000);
 
 load();
