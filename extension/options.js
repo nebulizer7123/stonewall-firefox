@@ -172,6 +172,13 @@ document.getElementById('endPomodoro').addEventListener('click', async () => {
   updatePomodoroDisplay();
 });
 
+document.getElementById('endPomodoro').addEventListener('click', async () => {
+  if (!lists[currentIndex]) return;
+  lists[currentIndex].pomodoro = null;
+  await saveLists();
+  updatePomodoroDisplay();
+});
+
 function formatTime(seconds) {
   const h = Math.floor(seconds / 3600);
   const m = Math.floor((seconds % 3600) / 60);
