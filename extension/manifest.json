@@ -22,6 +22,7 @@
     "open_in_tab": true
   },
 
+  
   "browser_action": {
     "default_icon": "brick.png",
     "default_popup": "popup.html"

@@ -24,6 +24,7 @@ async function load() {
   lists = data.lists;
   const active = lists.findIndex(l => l.pomodoro && l.pomodoro.until > Date.now());
   currentIndex = active !== -1 ? active : data.lastPopupIndex || 0;
+  minutesEl.value = '20';
 
   updateSelect();
   updateCountdown();
@@ -49,6 +50,7 @@ selectEl.addEventListener('change', () => {
   currentIndex = parseInt(selectEl.value, 10);
   save();
 
+  
   updateCountdown();
 });
 
@@ -57,7 +59,9 @@ document.getElementById('start').addEventListener('click', async () => {
   if (!minutes || minutes <= 0) return;
   lists[currentIndex].pomodoro = {until: Date.now() + minutes * 60000};
   await save();
-  minutesEl.value = '';
+
+  minutesEl.value = '20';
+
   updateCountdown();
 });
 
@@ -67,6 +71,7 @@ endBtn.addEventListener('click', async () => {
   await save();
   updateCountdown();
 });
+
 
 
 function updateCountdown() {
@@ -96,6 +101,7 @@ browser.storage.onChanged.addListener((changes, area) => {
     const active = lists.findIndex(l => l.pomodoro && l.pomodoro.until > Date.now());
     if (active !== -1) currentIndex = active;
 
+    
     updateSelect();
     updateCountdown();
   }

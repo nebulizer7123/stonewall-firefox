@@ -24,6 +24,7 @@ async function load() {
   updateListSelector();
   updateStats(data.timeSpent || {});
   showList(currentIndex);
+  document.getElementById('pomodoroMinutes').value = '20';
   updatePomodoroDisplay();
 }
 
@@ -159,7 +160,14 @@ document.getElementById('startPomodoro').addEventListener('click', async () => {
   const minutes = parseInt(document.getElementById('pomodoroMinutes').value, 10);
   if (isNaN(minutes) || minutes <= 0) return;
   lists[currentIndex].pomodoro = {until: Date.now() + minutes * 60000};
-  document.getElementById('pomodoroMinutes').value = '';
+  document.getElementById('pomodoroMinutes').value = '20';
+  await saveLists();
+  updatePomodoroDisplay();
+});
+
+document.getElementById('endPomodoro').addEventListener('click', async () => {
+  if (!lists[currentIndex]) return;
+  lists[currentIndex].pomodoro = null;
   await saveLists();
   updatePomodoroDisplay();
 });
