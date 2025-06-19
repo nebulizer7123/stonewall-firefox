@@ -15,6 +15,7 @@ Stonewall is a Firefox add-on designed to help you avoid distracting websites. I
 ## Options
 
 Open the add-on options to add or remove blocked sites and configure optional start/end times.
+The options page also displays how much time you've spent on each domain so far.
 
 Blocked entries use the full URL path. For example, blocking `https://www.reddit.com/r/gaming` leaves other Reddit paths accessible.
 

@@ -1,6 +1,8 @@
 async function load() {
-  const data = await browser.storage.local.get({blocked: []});
+  const data = await browser.storage.local.get({blocked: [], timeSpent: {}});
   updateUI(data.blocked);
+  updateStats(data.timeSpent);
+
 }
 
 function updateUI(list) {
@@ -22,6 +24,28 @@ function updateUI(list) {
   });
 }
 
+function formatTime(seconds) {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = seconds % 60;
+  const parts = [];
+  if (h) parts.push(`${h}h`);
+  if (m) parts.push(`${m}m`);
+  parts.push(`${s}s`);
+  return parts.join(' ');
+}
+
+function updateStats(stats) {
+  const ul = document.getElementById('statsList');
+  ul.innerHTML = '';
+  const entries = Object.entries(stats).sort((a, b) => b[1] - a[1]);
+  entries.forEach(([domain, seconds]) => {
+    const li = document.createElement('li');
+    li.textContent = `${domain}: ${formatTime(seconds)}`;
+    ul.appendChild(li);
+  });
+}
+
 document.getElementById('addForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   const pattern = document.getElementById('pattern').value.trim();
@@ -36,5 +60,13 @@ document.getElementById('addForm').addEventListener('submit', async (e) => {
   document.getElementById('end').value = '';
   load();
 });
+
+browser.storage.onChanged.addListener((changes, area) => {
+  if (area === 'local') {
+    if (changes.blocked) updateUI(changes.blocked.newValue);
+    if (changes.timeSpent) updateStats(changes.timeSpent.newValue);
+  }
+});
+
 
 load();
