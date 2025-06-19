@@ -36,22 +36,44 @@ function listActive(list) {
   return inSchedule(list);
 }
 
+function patternMatches(pattern, url) {
+  try {
+    const u = new URL(url);
+    if (pattern.includes('://')) {
+      return url.startsWith(pattern);
+    }
+    const idx = pattern.indexOf('/');
+    const domain = idx === -1 ? pattern : pattern.slice(0, idx);
+    const path = idx === -1 ? '' : pattern.slice(idx);
+    if (u.hostname === domain || u.hostname.endsWith('.' + domain)) {
+      return u.pathname.startsWith(path);
+    }
+  } catch (e) {
+    // ignore malformed URLs
+  }
+  return false;
+}
+
 function matches(list, url) {
-  return list.patterns.some(p => url.startsWith(p));
+  return list.patterns.some(p => patternMatches(p, url));
 }
 
 function isBlocked(url) {
+  if (
+    url.startsWith('moz-extension:') ||
+    url.startsWith('about:') ||
+    url.startsWith('chrome:') ||
+    url.startsWith('resource:')
+  ) {
+    return false;
+  }
   const activeAllows = lists.filter(l => l.type === 'allow' && listActive(l));
   if (activeAllows.length) {
-    const allowed = activeAllows.some(l => matches(l, url));
-    if (!allowed) return true;
+    return !activeAllows.some(l => matches(l, url));
   }
-  for (const list of lists) {
-    if (list.type === 'block' && listActive(list) && matches(list, url)) {
-      return true;
-    }
-  }
-  return false;
+  return lists.some(
+    l => l.type === 'block' && listActive(l) && matches(l, url)
+  );
 }
 
 async function loadData() {
@@ -83,7 +105,35 @@ browser.storage.onChanged.addListener((changes, area) => {
 
 browser.webNavigation.onCommitted.addListener((details) => {
   if (isBlocked(details.url)) {
-    browser.tabs.update(details.tabId, {url: 'about:blank'});
+    const blockPage = browser.runtime.getURL('blocked.html') +
+      '?url=' + encodeURIComponent(details.url);
+    browser.tabs.update(details.tabId, {url: blockPage});
+  }
+});
+
+async function handleUnblock(url) {
+  const activeAllows = lists.filter(l => l.type === 'allow' && listActive(l));
+  if (activeAllows.length) {
+    const list = activeAllows[0];
+    if (!list.patterns.includes(url)) {
+      list.patterns.push(url);
+    }
+  } else {
+    for (const list of lists) {
+      if (list.type === 'block' && listActive(list)) {
+        const idx = list.patterns.indexOf(url);
+        if (idx !== -1) {
+          list.patterns.splice(idx, 1);
+        }
+      }
+    }
+  }
+  await browser.storage.local.set({lists});
+}
+
+browser.runtime.onMessage.addListener((msg) => {
+  if (msg && msg.type === 'unblockUrl' && msg.url) {
+    handleUnblock(msg.url);
   }
 });
 
