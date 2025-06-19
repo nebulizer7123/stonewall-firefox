@@ -62,7 +62,11 @@ browser.webNavigation.onCommitted.addListener((details) => {
 browser.contextMenus.create({
   id: 'stonewall-block',
   title: 'Block this page',
-  contexts: ['page']
+  contexts: ['page'],
+  icons: {
+    16: 'trowel.png',
+    32: 'trowel.png'
+  }
 });
 
 async function addBlock(url) {
