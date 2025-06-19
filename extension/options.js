@@ -2,6 +2,7 @@ async function load() {
   const data = await browser.storage.local.get({blocked: [], timeSpent: {}});
   updateUI(data.blocked);
   updateStats(data.timeSpent);
+
 }
 
 function updateUI(list) {
@@ -66,5 +67,6 @@ browser.storage.onChanged.addListener((changes, area) => {
     if (changes.timeSpent) updateStats(changes.timeSpent.newValue);
   }
 });
+
 
 load();
