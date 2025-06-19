@@ -8,9 +8,18 @@
   <h1>Stonewall Options</h1>
   <form id="addForm">
     <input id="pattern" type="text" placeholder="URL pattern" required>
+    <label for="start">Start time</label>
     <input id="start" type="time">
+    <label for="end">End time</label>
     <input id="end" type="time">
     <button type="submit">Add</button>
+  </form>
+
+  <h2>Pomodoro Block</h2>
+  <form id="pomodoroForm">
+    <input id="pomodoroPattern" type="text" placeholder="URL pattern" required>
+    <input id="pomodoroMinutes" type="number" min="1" placeholder="Minutes" required>
+    <button type="submit">Start</button>
   </form>
   <ul id="blockedList"></ul>
   <h2>Time Spent</h2>

@@ -2,6 +2,15 @@ let blockedList = [];
 let timeSpent = {};
 let currentDomain = null;
 
+async function cleanPomodoro() {
+  const now = Date.now();
+  const newList = blockedList.filter(e => !(e.pomodoro && now >= e.until));
+  if (newList.length !== blockedList.length) {
+    blockedList = newList;
+    await browser.storage.local.set({blocked: blockedList});
+  }
+}
+
 async function loadData() {
   const data = await browser.storage.local.get({blocked: [], timeSpent: {}});
   blockedList = data.blocked;
@@ -33,8 +42,11 @@ function inSchedule(entry) {
 }
 
 function isBlocked(url) {
+  const now = Date.now();
   for (const entry of blockedList) {
+    if (entry.pomodoro && now >= entry.until) continue;
     if (url.startsWith(entry.pattern)) {
+      if (entry.pomodoro) return true;
       if (inSchedule(entry)) return true;
     }
   }
@@ -76,4 +88,5 @@ setInterval(async () => {
     currentDomain = domain;
   }
   await browser.storage.local.set({timeSpent});
+  await cleanPomodoro();
 }, 1000);
