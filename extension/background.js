@@ -59,6 +59,14 @@ function matches(list, url) {
 }
 
 function isBlocked(url) {
+  if (
+    url.startsWith('moz-extension:') ||
+    url.startsWith('about:') ||
+    url.startsWith('chrome:') ||
+    url.startsWith('resource:')
+  ) {
+    return false;
+  }
   const activeAllows = lists.filter(l => l.type === 'allow' && listActive(l));
   if (activeAllows.length) {
     return !activeAllows.some(l => matches(l, url));
@@ -97,7 +105,35 @@ browser.storage.onChanged.addListener((changes, area) => {
 
 browser.webNavigation.onCommitted.addListener((details) => {
   if (isBlocked(details.url)) {
-    browser.tabs.update(details.tabId, {url: 'about:blank'});
+    const blockPage = browser.runtime.getURL('blocked.html') +
+      '?url=' + encodeURIComponent(details.url);
+    browser.tabs.update(details.tabId, {url: blockPage});
+  }
+});
+
+async function handleUnblock(url) {
+  const activeAllows = lists.filter(l => l.type === 'allow' && listActive(l));
+  if (activeAllows.length) {
+    const list = activeAllows[0];
+    if (!list.patterns.includes(url)) {
+      list.patterns.push(url);
+    }
+  } else {
+    for (const list of lists) {
+      if (list.type === 'block' && listActive(list)) {
+        const idx = list.patterns.indexOf(url);
+        if (idx !== -1) {
+          list.patterns.splice(idx, 1);
+        }
+      }
+    }
+  }
+  await browser.storage.local.set({lists});
+}
+
+browser.runtime.onMessage.addListener((msg) => {
+  if (msg && msg.type === 'unblockUrl' && msg.url) {
+    handleUnblock(msg.url);
   }
 });
 
