@@ -17,6 +17,7 @@ Stonewall is a Firefox add-on designed to help you avoid distracting websites. I
 
 Open the add-on options to add or remove blocked sites and configure optional start/end times.
 You can adjust the schedule of existing entries right from the list and start a temporary Pomodoro block for a site. A small popup is available from the toolbar button where you can select a list and begin or end a Pomodoro session without opening the options page. The popup also links to the preferences page for quick access.
+
 The options page also displays how much time you've spent on each domain so far.
 You can remove domains from this list to reset their counters.
 

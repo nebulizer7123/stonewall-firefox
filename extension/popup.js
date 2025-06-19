@@ -6,6 +6,7 @@ const countdownEl = document.getElementById('countdown');
 const endBtn = document.getElementById('end');
 const optionsLink = document.getElementById('openOptions');
 
+
 function formatTime(ms) {
   const sec = Math.ceil(ms / 1000);
   const m = Math.floor(sec / 60);
@@ -15,6 +16,7 @@ function formatTime(ms) {
 
 async function load() {
   const data = await browser.storage.local.get({lists: null, lastPopupIndex: 0});
+
   if (!data.lists) {
     data.lists = [{id: Date.now(), name: 'Default Block', type: 'block', patterns: [], start: null, end: null, pomodoro: null}];
     await browser.storage.local.set({lists: data.lists});
@@ -22,6 +24,7 @@ async function load() {
   lists = data.lists;
   const active = lists.findIndex(l => l.pomodoro && l.pomodoro.until > Date.now());
   currentIndex = active !== -1 ? active : data.lastPopupIndex || 0;
+
   updateSelect();
   updateCountdown();
 }
@@ -39,11 +42,13 @@ function updateSelect() {
 
 async function save() {
   await browser.storage.local.set({lists, lastPopupIndex: currentIndex});
+
 }
 
 selectEl.addEventListener('change', () => {
   currentIndex = parseInt(selectEl.value, 10);
   save();
+
   updateCountdown();
 });
 
@@ -62,6 +67,7 @@ endBtn.addEventListener('click', async () => {
   await save();
   updateCountdown();
 });
+
 
 function updateCountdown() {
   const list = lists[currentIndex];
@@ -89,14 +95,17 @@ browser.storage.onChanged.addListener((changes, area) => {
     }
     const active = lists.findIndex(l => l.pomodoro && l.pomodoro.until > Date.now());
     if (active !== -1) currentIndex = active;
+
     updateSelect();
     updateCountdown();
   }
 });
 
 setInterval(updateCountdown, 1000);
+
 optionsLink.addEventListener('click', (e) => {
   e.preventDefault();
   browser.runtime.openOptionsPage();
 });
+
 load();
