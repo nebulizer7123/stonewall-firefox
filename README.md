@@ -25,6 +25,5 @@ Blocked entries use the full URL path. For example, blocking `https://www.reddit
 Time spent on each domain is stored locally and updated once per second.
 When a list's type is set to "Allow Only", any active allow lists restrict access exclusively to their patterns. All other URLs are blocked, and these allowances take priority over block lists.
 
-Extension and about pages are automatically allowed so you can always access add-on options.
+Extension and about pages are always accessible, even when an allow list is active, so you can open any add-on settings page.
 Blocked URLs show a page with an Unblock button that either removes the address from a block list or adds it to an active allow list.
-

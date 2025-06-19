@@ -59,12 +59,15 @@ function matches(list, url) {
 }
 
 function isBlocked(url) {
-  if (
-    url.startsWith('moz-extension:') ||
-    url.startsWith('about:') ||
-    url.startsWith('chrome:') ||
-    url.startsWith('resource:')
-  ) {
+  try {
+    const scheme = new URL(url).protocol;
+    if (
+      scheme !== 'http:' &&
+      scheme !== 'https:'
+    ) {
+      return false;
+    }
+  } catch (e) {
     return false;
   }
   const activeAllows = lists.filter(l => l.type === 'allow' && listActive(l));
