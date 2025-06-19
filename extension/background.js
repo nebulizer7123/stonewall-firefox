@@ -36,8 +36,26 @@ function listActive(list) {
   return inSchedule(list);
 }
 
+function patternMatches(pattern, url) {
+  try {
+    const u = new URL(url);
+    if (pattern.includes('://')) {
+      return url.startsWith(pattern);
+    }
+    const idx = pattern.indexOf('/');
+    const domain = idx === -1 ? pattern : pattern.slice(0, idx);
+    const path = idx === -1 ? '' : pattern.slice(idx);
+    if (u.hostname === domain || u.hostname.endsWith('.' + domain)) {
+      return u.pathname.startsWith(path);
+    }
+  } catch (e) {
+    // ignore malformed URLs
+  }
+  return false;
+}
+
 function matches(list, url) {
-  return list.patterns.some(p => url.startsWith(p));
+  return list.patterns.some(p => patternMatches(p, url));
 }
 
 function isBlocked(url) {
