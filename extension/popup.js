@@ -22,6 +22,7 @@ function inSchedule(list) {
   return minutes >= startM || minutes <= endM;
 }
 
+
 function formatTime(ms) {
   const sec = Math.ceil(ms / 1000);
   const m = Math.floor(sec / 60);
@@ -43,6 +44,7 @@ async function load() {
   updateCountdown();
   manualEl.value = lists[currentIndex].manual || '';
   updateStatus();
+
 }
 
 function updateSelect() {
@@ -95,6 +97,7 @@ manualEl.addEventListener('change', () => {
   updateStatus();
 });
 
+
 function updateCountdown() {
   const list = lists[currentIndex];
   if (!list || !list.pomodoro) {
@@ -146,6 +149,7 @@ browser.storage.onChanged.addListener((changes, area) => {
 });
 
 setInterval(() => { updateCountdown(); updateStatus(); }, 1000);
+
 optionsLink.addEventListener('click', (e) => {
   e.preventDefault();
   browser.runtime.openOptionsPage();
