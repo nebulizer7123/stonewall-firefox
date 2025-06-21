@@ -32,26 +32,53 @@ function inSchedule(list) {
 }
 
 function listActive(list) {
+  if (list.manual === 'block') return true;
+  if (list.manual === 'unblock') return false;
   if (list.pomodoro) return Date.now() < list.pomodoro.until;
   return inSchedule(list);
 }
 
+function patternMatches(pattern, url) {
+  try {
+    const u = new URL(url);
+    if (pattern.includes('://')) {
+      return url.startsWith(pattern);
+    }
+    const idx = pattern.indexOf('/');
+    const domain = idx === -1 ? pattern : pattern.slice(0, idx);
+    const path = idx === -1 ? '' : pattern.slice(idx);
+    if (u.hostname === domain || u.hostname.endsWith('.' + domain)) {
+      return u.pathname.startsWith(path);
+    }
+  } catch (e) {
+    // ignore malformed URLs
+  }
+  return false;
+}
+
 function matches(list, url) {
-  return list.patterns.some(p => url.startsWith(p));
+  return list.patterns.some(p => patternMatches(p, url));
 }
 
 function isBlocked(url) {
+  try {
+    const scheme = new URL(url).protocol;
+    if (
+      scheme !== 'http:' &&
+      scheme !== 'https:'
+    ) {
+      return false;
+    }
+  } catch (e) {
+    return false;
+  }
   const activeAllows = lists.filter(l => l.type === 'allow' && listActive(l));
   if (activeAllows.length) {
-    const allowed = activeAllows.some(l => matches(l, url));
-    if (!allowed) return true;
+    return !activeAllows.some(l => matches(l, url));
   }
-  for (const list of lists) {
-    if (list.type === 'block' && listActive(list) && matches(list, url)) {
-      return true;
-    }
-  }
-  return false;
+  return lists.some(
+    l => l.type === 'block' && listActive(l) && matches(l, url)
+  );
 }
 
 async function loadData() {
@@ -64,11 +91,12 @@ async function loadData() {
       patterns: data.blocked.map(e => e.pattern),
       start: null,
       end: null,
-      pomodoro: null
+      pomodoro: null,
+      manual: null
     }];
     await browser.storage.local.set({lists: data.lists, blocked: []});
   }
-  lists = data.lists;
+  lists = data.lists.map(l => Object.assign({manual: null}, l));
   timeSpent = data.timeSpent;
 }
 
@@ -83,7 +111,35 @@ browser.storage.onChanged.addListener((changes, area) => {
 
 browser.webNavigation.onCommitted.addListener((details) => {
   if (isBlocked(details.url)) {
-    browser.tabs.update(details.tabId, {url: 'about:blank'});
+    const blockPage = browser.runtime.getURL('blocked.html') +
+      '?url=' + encodeURIComponent(details.url);
+    browser.tabs.update(details.tabId, {url: blockPage});
+  }
+});
+
+async function handleUnblock(url) {
+  const activeAllows = lists.filter(l => l.type === 'allow' && listActive(l));
+  if (activeAllows.length) {
+    const list = activeAllows[0];
+    if (!list.patterns.includes(url)) {
+      list.patterns.push(url);
+    }
+  } else {
+    for (const list of lists) {
+      if (list.type === 'block' && listActive(list)) {
+        const idx = list.patterns.indexOf(url);
+        if (idx !== -1) {
+          list.patterns.splice(idx, 1);
+        }
+      }
+    }
+  }
+  await browser.storage.local.set({lists});
+}
+
+browser.runtime.onMessage.addListener((msg) => {
+  if (msg && msg.type === 'unblockUrl' && msg.url) {
+    handleUnblock(msg.url);
   }
 });
 
@@ -100,7 +156,7 @@ browser.contextMenus.create({
 async function addBlock(url) {
   const data = await browser.storage.local.get({lists: []});
   if (data.lists.length === 0) {
-    data.lists.push({id: Date.now(), name: 'Default Block', type: 'block', patterns: [], start: null, end: null, pomodoro: null});
+    data.lists.push({id: Date.now(), name: 'Default Block', type: 'block', patterns: [], start: null, end: null, pomodoro: null, manual: null});
   }
   const list = data.lists[0];
   if (!list.patterns.includes(url)) {

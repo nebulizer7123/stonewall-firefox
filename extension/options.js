@@ -24,6 +24,7 @@ async function load() {
   updateListSelector();
   updateStats(data.timeSpent || {});
   showList(currentIndex);
+  document.getElementById('pomodoroMinutes').value = '20';
   updatePomodoroDisplay();
 }
 
@@ -63,8 +64,10 @@ function showList(index) {
   document.getElementById('listType').value = list.type;
   document.getElementById('listStart').value = list.start || '';
   document.getElementById('listEnd').value = list.end || '';
+  listManualEl.value = list.manual || '';
   renderPatterns(list);
   updatePomodoroDisplay();
+  updateStatus();
 }
 
 function renderPatterns(list) {
@@ -111,12 +114,29 @@ const listNameEl = document.getElementById('listName');
 const listTypeEl = document.getElementById('listType');
 const listStartEl = document.getElementById('listStart');
 const listEndEl = document.getElementById('listEnd');
+const listManualEl = document.getElementById('listManual');
+const statusEl = document.getElementById('listStatus');
 const pomodoroEl = document.getElementById('pomodoroCountdown');
+
+function inSchedule(list) {
+  if (!list.start || !list.end) return true;
+  const now = new Date();
+  const minutes = now.getHours() * 60 + now.getMinutes();
+  const [sh, sm] = list.start.split(':').map(Number);
+  const [eh, em] = list.end.split(':').map(Number);
+  const startM = sh * 60 + sm;
+  const endM = eh * 60 + em;
+  if (startM <= endM) {
+    return minutes >= startM && minutes <= endM;
+  }
+  return minutes >= startM || minutes <= endM;
+}
 
 function updatePomodoroDisplay() {
   const list = lists[currentIndex];
   if (!list || !list.pomodoro) {
     pomodoroEl.textContent = '';
+    updateStatus();
     return;
   }
   const remaining = list.pomodoro.until - Date.now();
@@ -127,6 +147,23 @@ function updatePomodoroDisplay() {
     list.pomodoro = null;
     saveLists();
   }
+  updateStatus();
+}
+
+function computeStatus(list) {
+  if (!list) return '';
+  if (list.manual === 'block') return 'Blocked';
+  if (list.manual === 'unblock') return 'Unblocked';
+  if (list.pomodoro && list.pomodoro.until > Date.now()) return 'Blocked (Pomodoro)';
+  if (list.start || list.end) {
+    return inSchedule(list) ? 'Blocked (Scheduled)' : 'Unblocked';
+  }
+  return 'Unblocked';
+}
+
+function updateStatus() {
+  const list = lists[currentIndex];
+  statusEl.textContent = computeStatus(list);
 }
 
 function saveCurrentListFields() {
@@ -136,6 +173,7 @@ function saveCurrentListFields() {
   list.type = listTypeEl.value;
   list.start = listStartEl.value || null;
   list.end = listEndEl.value || null;
+  list.manual = listManualEl.value || null;
   return saveLists();
 }
 
@@ -145,6 +183,10 @@ listNameEl.addEventListener('blur', saveCurrentListFields);
 listTypeEl.addEventListener('change', saveCurrentListFields);
 listStartEl.addEventListener('change', saveCurrentListFields);
 listEndEl.addEventListener('change', saveCurrentListFields);
+listManualEl.addEventListener('change', () => {
+  saveCurrentListFields();
+  updateStatus();
+});
 
 document.getElementById('addPatternForm').addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -159,7 +201,14 @@ document.getElementById('startPomodoro').addEventListener('click', async () => {
   const minutes = parseInt(document.getElementById('pomodoroMinutes').value, 10);
   if (isNaN(minutes) || minutes <= 0) return;
   lists[currentIndex].pomodoro = {until: Date.now() + minutes * 60000};
-  document.getElementById('pomodoroMinutes').value = '';
+  document.getElementById('pomodoroMinutes').value = '20';
+  await saveLists();
+  updatePomodoroDisplay();
+});
+
+document.getElementById('endPomodoro').addEventListener('click', async () => {
+  if (!lists[currentIndex]) return;
+  lists[currentIndex].pomodoro = null;
   await saveLists();
   updatePomodoroDisplay();
 });
@@ -213,6 +262,6 @@ browser.storage.onChanged.addListener((changes, area) => {
   }
 });
 
-setInterval(updatePomodoroDisplay, 1000);
+setInterval(() => { updatePomodoroDisplay(); updateStatus(); }, 1000);
 
 load();
