@@ -13,14 +13,17 @@
   <select id="listSelect"></select>
   <label for="minutes">Minutes</label>
   <input id="minutes" type="number" min="1" value="20">
-
+  <label for="manual">Manual</label>
+  <select id="manual">
+    <option value="">Auto</option>
+    <option value="block">Block</option>
+    <option value="unblock">Unblock</option>
+  </select>
   <button id="start">Start Pomodoro</button>
   <button id="end">End Pomodoro</button>
   <div id="countdown"></div>
+  <div id="status"></div>
   <a id="openOptions" href="#">Preferences</a>
-
-  
-  
   <script src="popup.js"></script>
 </body>
 </html>

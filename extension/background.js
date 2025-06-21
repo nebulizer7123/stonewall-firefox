@@ -32,6 +32,8 @@ function inSchedule(list) {
 }
 
 function listActive(list) {
+  if (list.manual === 'block') return true;
+  if (list.manual === 'unblock') return false;
   if (list.pomodoro) return Date.now() < list.pomodoro.until;
   return inSchedule(list);
 }
@@ -89,11 +91,12 @@ async function loadData() {
       patterns: data.blocked.map(e => e.pattern),
       start: null,
       end: null,
-      pomodoro: null
+      pomodoro: null,
+      manual: null
     }];
     await browser.storage.local.set({lists: data.lists, blocked: []});
   }
-  lists = data.lists;
+  lists = data.lists.map(l => Object.assign({manual: null}, l));
   timeSpent = data.timeSpent;
 }
 
@@ -153,7 +156,7 @@ browser.contextMenus.create({
 async function addBlock(url) {
   const data = await browser.storage.local.get({lists: []});
   if (data.lists.length === 0) {
-    data.lists.push({id: Date.now(), name: 'Default Block', type: 'block', patterns: [], start: null, end: null, pomodoro: null});
+    data.lists.push({id: Date.now(), name: 'Default Block', type: 'block', patterns: [], start: null, end: null, pomodoro: null, manual: null});
   }
   const list = data.lists[0];
   if (!list.patterns.includes(url)) {
