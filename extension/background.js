@@ -74,18 +74,14 @@ function isBlocked(url) {
   if (!list || !listActive(list)) return false;
   if (list.type === 'allow') {
     return !matches(list, url);
-  const list = lists.find(l => l.id === activeListId);
-  if (!list || !listActive(list)) return false;
-  if (list.type === 'allow') {
-    return !matches(list, url);
   }
   return matches(list, url);
-  return matches(list, url);
+
 }
 
 async function loadData() {
   const data = await browser.storage.local.get({lists: null, blocked: [], timeSpent: {}, activeListId: null});
-  const data = await browser.storage.local.get({lists: null, blocked: [], timeSpent: {}, activeListId: null});
+
   if (!data.lists) {
     data.lists = [{
       id: Date.now(),
@@ -94,10 +90,6 @@ async function loadData() {
       patterns: data.blocked.map(e => e.pattern),
       start: null,
       end: null,
-      pomodoro: null,
-      manual: null
-      pomodoro: null,
-      manual: null
       pomodoro: null,
       manual: null
     }];

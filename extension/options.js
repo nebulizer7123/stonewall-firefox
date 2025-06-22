@@ -1,11 +1,10 @@
 let lists = [];
 let currentIndex = 0;
 let activeListId = null;
-let activeListId = null;
 
 async function ensureLists() {
   const data = await browser.storage.local.get({lists: null, blocked: [], activeListId: null});
-  const data = await browser.storage.local.get({lists: null, blocked: [], activeListId: null});
+
   if (!data.lists) {
     data.lists = [{
       id: Date.now(),
@@ -20,7 +19,6 @@ async function ensureLists() {
   }
   lists = data.lists;
   activeListId = data.activeListId !== null ? data.activeListId : data.lists[0].id;
-  activeListId = data.activeListId !== null ? data.activeListId : data.lists[0].id;
   return data;
 }
 
@@ -28,8 +26,6 @@ async function load() {
   const data = await ensureLists();
   updateListSelector();
   updateStats(data.timeSpent || {});
-  currentIndex = lists.findIndex(l => l.id === activeListId);
-  if (currentIndex === -1) currentIndex = 0;
   currentIndex = lists.findIndex(l => l.id === activeListId);
   if (currentIndex === -1) currentIndex = 0;
   showList(currentIndex);
@@ -44,7 +40,7 @@ function updateListSelector() {
     const opt = document.createElement('option');
     opt.value = i;
     opt.textContent = l.name + (l.id === activeListId ? ' (Active)' : '');
-    opt.textContent = l.name + (l.id === activeListId ? ' (Active)' : '');
+
     select.appendChild(opt);
   });
   if (lists.length) select.value = currentIndex;
@@ -67,11 +63,6 @@ setActiveBtn.addEventListener('click', async () => {
   updateListSelector();
 });
 
-setActiveBtn.addEventListener('click', async () => {
-  activeListId = lists[currentIndex].id;
-  await browser.storage.local.set({activeListId});
-  updateListSelector();
-});
 
 async function saveLists() {
   await browser.storage.local.set({lists});
@@ -91,8 +82,7 @@ function showList(index) {
   updatePomodoroDisplay();
   updateStatus();
   setActiveBtn.textContent = list.id === activeListId ? 'Active' : 'Set Active';
-  updateStatus();
-  setActiveBtn.textContent = list.id === activeListId ? 'Active' : 'Set Active';
+
 }
 
 function renderPatterns(list) {
@@ -142,21 +132,6 @@ const listEndEl = document.getElementById('listEnd');
 const listManualEl = document.getElementById('listManual');
 const statusEl = document.getElementById('listStatus');
 const pomodoroEl = document.getElementById('pomodoroCountdown');
-const setActiveBtn = document.getElementById('setActive');
-
-function inSchedule(list) {
-  if (!list.start || !list.end) return true;
-  const now = new Date();
-  const minutes = now.getHours() * 60 + now.getMinutes();
-  const [sh, sm] = list.start.split(':').map(Number);
-  const [eh, em] = list.end.split(':').map(Number);
-  const startM = sh * 60 + sm;
-  const endM = eh * 60 + em;
-  if (startM <= endM) {
-    return minutes >= startM && minutes <= endM;
-  }
-  return minutes >= startM || minutes <= endM;
-}
 const setActiveBtn = document.getElementById('setActive');
 
 function inSchedule(list) {
@@ -298,10 +273,6 @@ browser.storage.onChanged.addListener((changes, area) => {
       lists = changes.lists.newValue;
       updateListSelector();
       showList(currentIndex);
-    }
-    if (changes.activeListId) {
-      activeListId = changes.activeListId.newValue;
-      updateListSelector();
     }
     if (changes.activeListId) {
       activeListId = changes.activeListId.newValue;
