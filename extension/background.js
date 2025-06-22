@@ -1,6 +1,7 @@
 let lists = [];
 let timeSpent = {};
 let currentDomain = null;
+let activeListId = null;
 
 async function cleanPomodoro() {
   const now = Date.now();
@@ -32,30 +33,53 @@ function inSchedule(list) {
 }
 
 function listActive(list) {
+  if (list.manual === 'block') return true;
+  if (list.manual === 'unblock') return false;
   if (list.pomodoro) return Date.now() < list.pomodoro.until;
   return inSchedule(list);
 }
 
-function matches(list, url) {
-  return list.patterns.some(p => url.startsWith(p));
-}
-
-function isBlocked(url) {
-  const activeAllows = lists.filter(l => l.type === 'allow' && listActive(l));
-  if (activeAllows.length) {
-    const allowed = activeAllows.some(l => matches(l, url));
-    if (!allowed) return true;
-  }
-  for (const list of lists) {
-    if (list.type === 'block' && listActive(list) && matches(list, url)) {
-      return true;
+function patternMatches(pattern, url) {
+  try {
+    const u = new URL(url);
+    if (pattern.includes('://')) {
+      return url.startsWith(pattern);
     }
+    const idx = pattern.indexOf('/');
+    const domain = idx === -1 ? pattern : pattern.slice(0, idx);
+    const path = idx === -1 ? '' : pattern.slice(idx);
+    if (u.hostname === domain || u.hostname.endsWith('.' + domain)) {
+      return u.pathname.startsWith(path);
+    }
+  } catch (e) {
+    // ignore malformed URLs
   }
   return false;
 }
 
+function matches(list, url) {
+  return list.patterns.some(p => patternMatches(p, url));
+}
+
+function isBlocked(url) {
+  try {
+    const scheme = new URL(url).protocol;
+    if (scheme !== 'http:' && scheme !== 'https:') {
+      return false;
+    }
+  } catch (e) {
+    return false;
+  }
+  const list = lists.find(l => l.id === activeListId);
+  if (!list || !listActive(list)) return false;
+  if (list.type === 'allow') {
+    return !matches(list, url);
+  }
+  return matches(list, url);
+}
+
 async function loadData() {
-  const data = await browser.storage.local.get({lists: null, blocked: [], timeSpent: {}});
+  const data = await browser.storage.local.get({lists: null, blocked: [], timeSpent: {}, activeListId: null});
   if (!data.lists) {
     data.lists = [{
       id: Date.now(),
@@ -64,12 +88,14 @@ async function loadData() {
       patterns: data.blocked.map(e => e.pattern),
       start: null,
       end: null,
-      pomodoro: null
+      pomodoro: null,
+      manual: null
     }];
     await browser.storage.local.set({lists: data.lists, blocked: []});
   }
-  lists = data.lists;
+  lists = data.lists.map(l => Object.assign({manual: null}, l));
   timeSpent = data.timeSpent;
+  activeListId = data.activeListId !== null ? data.activeListId : lists[0].id;
 }
 
 loadData();
@@ -78,12 +104,33 @@ browser.storage.onChanged.addListener((changes, area) => {
   if (area === 'local') {
     if (changes.lists) lists = changes.lists.newValue;
     if (changes.timeSpent) timeSpent = changes.timeSpent.newValue;
+    if (changes.activeListId) activeListId = changes.activeListId.newValue;
   }
 });
 
 browser.webNavigation.onCommitted.addListener((details) => {
   if (isBlocked(details.url)) {
-    browser.tabs.update(details.tabId, {url: 'about:blank'});
+    const blockPage = browser.runtime.getURL('blocked.html') +
+      '?url=' + encodeURIComponent(details.url);
+    browser.tabs.update(details.tabId, {url: blockPage});
+  }
+});
+
+async function handleUnblock(url) {
+  const list = lists.find(l => l.id === activeListId);
+  if (!list) return;
+  if (list.type === 'allow') {
+    if (!list.patterns.includes(url)) list.patterns.push(url);
+  } else {
+    const idx = list.patterns.indexOf(url);
+    if (idx !== -1) list.patterns.splice(idx, 1);
+  }
+  await browser.storage.local.set({lists});
+}
+
+browser.runtime.onMessage.addListener((msg) => {
+  if (msg && msg.type === 'unblockUrl' && msg.url) {
+    handleUnblock(msg.url);
   }
 });
 
@@ -98,15 +145,16 @@ browser.contextMenus.create({
 });
 
 async function addBlock(url) {
-  const data = await browser.storage.local.get({lists: []});
+  const data = await browser.storage.local.get({lists: [], activeListId: null});
   if (data.lists.length === 0) {
-    data.lists.push({id: Date.now(), name: 'Default Block', type: 'block', patterns: [], start: null, end: null, pomodoro: null});
+    data.lists.push({id: Date.now(), name: 'Default Block', type: 'block', patterns: [], start: null, end: null, pomodoro: null, manual: null});
+    data.activeListId = data.lists[0].id;
   }
-  const list = data.lists[0];
+  const list = data.lists.find(l => l.id === (data.activeListId || data.lists[0].id));
   if (!list.patterns.includes(url)) {
     list.patterns.push(url);
   }
-  await browser.storage.local.set({lists: data.lists});
+  await browser.storage.local.set({lists: data.lists, activeListId: data.activeListId});
 }
 
 browser.contextMenus.onClicked.addListener((info, tab) => {

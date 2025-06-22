@@ -1,8 +1,9 @@
 let lists = [];
 let currentIndex = 0;
+let activeListId = null;
 
 async function ensureLists() {
-  const data = await browser.storage.local.get({lists: null, blocked: []});
+  const data = await browser.storage.local.get({lists: null, blocked: [], activeListId: null});
   if (!data.lists) {
     data.lists = [{
       id: Date.now(),
@@ -16,6 +17,7 @@ async function ensureLists() {
     await browser.storage.local.set({lists: data.lists, blocked: []});
   }
   lists = data.lists;
+  activeListId = data.activeListId !== null ? data.activeListId : data.lists[0].id;
   return data;
 }
 
@@ -23,7 +25,10 @@ async function load() {
   const data = await ensureLists();
   updateListSelector();
   updateStats(data.timeSpent || {});
+  currentIndex = lists.findIndex(l => l.id === activeListId);
+  if (currentIndex === -1) currentIndex = 0;
   showList(currentIndex);
+  document.getElementById('pomodoroMinutes').value = '20';
   updatePomodoroDisplay();
 }
 
@@ -33,7 +38,7 @@ function updateListSelector() {
   lists.forEach((l, i) => {
     const opt = document.createElement('option');
     opt.value = i;
-    opt.textContent = l.name;
+    opt.textContent = l.name + (l.id === activeListId ? ' (Active)' : '');
     select.appendChild(opt);
   });
   if (lists.length) select.value = currentIndex;
@@ -50,6 +55,12 @@ document.getElementById('addListBtn').addEventListener('click', async () => {
   await saveLists();
 });
 
+setActiveBtn.addEventListener('click', async () => {
+  activeListId = lists[currentIndex].id;
+  await browser.storage.local.set({activeListId});
+  updateListSelector();
+});
+
 async function saveLists() {
   await browser.storage.local.set({lists});
   updateListSelector();
@@ -63,8 +74,11 @@ function showList(index) {
   document.getElementById('listType').value = list.type;
   document.getElementById('listStart').value = list.start || '';
   document.getElementById('listEnd').value = list.end || '';
+  listManualEl.value = list.manual || '';
   renderPatterns(list);
   updatePomodoroDisplay();
+  updateStatus();
+  setActiveBtn.textContent = list.id === activeListId ? 'Active' : 'Set Active';
 }
 
 function renderPatterns(list) {
@@ -111,12 +125,30 @@ const listNameEl = document.getElementById('listName');
 const listTypeEl = document.getElementById('listType');
 const listStartEl = document.getElementById('listStart');
 const listEndEl = document.getElementById('listEnd');
+const listManualEl = document.getElementById('listManual');
+const statusEl = document.getElementById('listStatus');
 const pomodoroEl = document.getElementById('pomodoroCountdown');
+const setActiveBtn = document.getElementById('setActive');
+
+function inSchedule(list) {
+  if (!list.start || !list.end) return true;
+  const now = new Date();
+  const minutes = now.getHours() * 60 + now.getMinutes();
+  const [sh, sm] = list.start.split(':').map(Number);
+  const [eh, em] = list.end.split(':').map(Number);
+  const startM = sh * 60 + sm;
+  const endM = eh * 60 + em;
+  if (startM <= endM) {
+    return minutes >= startM && minutes <= endM;
+  }
+  return minutes >= startM || minutes <= endM;
+}
 
 function updatePomodoroDisplay() {
   const list = lists[currentIndex];
   if (!list || !list.pomodoro) {
     pomodoroEl.textContent = '';
+    updateStatus();
     return;
   }
   const remaining = list.pomodoro.until - Date.now();
@@ -127,6 +159,23 @@ function updatePomodoroDisplay() {
     list.pomodoro = null;
     saveLists();
   }
+  updateStatus();
+}
+
+function computeStatus(list) {
+  if (!list) return '';
+  if (list.manual === 'block') return 'Blocked';
+  if (list.manual === 'unblock') return 'Unblocked';
+  if (list.pomodoro && list.pomodoro.until > Date.now()) return 'Blocked (Pomodoro)';
+  if (list.start || list.end) {
+    return inSchedule(list) ? 'Blocked (Scheduled)' : 'Unblocked';
+  }
+  return 'Unblocked';
+}
+
+function updateStatus() {
+  const list = lists[currentIndex];
+  statusEl.textContent = computeStatus(list);
 }
 
 function saveCurrentListFields() {
@@ -136,6 +185,7 @@ function saveCurrentListFields() {
   list.type = listTypeEl.value;
   list.start = listStartEl.value || null;
   list.end = listEndEl.value || null;
+  list.manual = listManualEl.value || null;
   return saveLists();
 }
 
@@ -145,6 +195,10 @@ listNameEl.addEventListener('blur', saveCurrentListFields);
 listTypeEl.addEventListener('change', saveCurrentListFields);
 listStartEl.addEventListener('change', saveCurrentListFields);
 listEndEl.addEventListener('change', saveCurrentListFields);
+listManualEl.addEventListener('change', () => {
+  saveCurrentListFields();
+  updateStatus();
+});
 
 document.getElementById('addPatternForm').addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -159,7 +213,14 @@ document.getElementById('startPomodoro').addEventListener('click', async () => {
   const minutes = parseInt(document.getElementById('pomodoroMinutes').value, 10);
   if (isNaN(minutes) || minutes <= 0) return;
   lists[currentIndex].pomodoro = {until: Date.now() + minutes * 60000};
-  document.getElementById('pomodoroMinutes').value = '';
+  document.getElementById('pomodoroMinutes').value = '20';
+  await saveLists();
+  updatePomodoroDisplay();
+});
+
+document.getElementById('endPomodoro').addEventListener('click', async () => {
+  if (!lists[currentIndex]) return;
+  lists[currentIndex].pomodoro = null;
   await saveLists();
   updatePomodoroDisplay();
 });
@@ -209,10 +270,14 @@ browser.storage.onChanged.addListener((changes, area) => {
       updateListSelector();
       showList(currentIndex);
     }
+    if (changes.activeListId) {
+      activeListId = changes.activeListId.newValue;
+      updateListSelector();
+    }
     if (changes.timeSpent) updateStats(changes.timeSpent.newValue);
   }
 });
 
-setInterval(updatePomodoroDisplay, 1000);
+setInterval(() => { updatePomodoroDisplay(); updateStatus(); }, 1000);
 
 load();
