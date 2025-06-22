@@ -76,10 +76,12 @@ function isBlocked(url) {
     return !matches(list, url);
   }
   return matches(list, url);
+
 }
 
 async function loadData() {
   const data = await browser.storage.local.get({lists: null, blocked: [], timeSpent: {}, activeListId: null});
+
   if (!data.lists) {
     data.lists = [{
       id: Date.now(),

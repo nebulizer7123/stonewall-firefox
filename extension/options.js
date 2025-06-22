@@ -4,6 +4,7 @@ let activeListId = null;
 
 async function ensureLists() {
   const data = await browser.storage.local.get({lists: null, blocked: [], activeListId: null});
+
   if (!data.lists) {
     data.lists = [{
       id: Date.now(),
@@ -39,6 +40,7 @@ function updateListSelector() {
     const opt = document.createElement('option');
     opt.value = i;
     opt.textContent = l.name + (l.id === activeListId ? ' (Active)' : '');
+
     select.appendChild(opt);
   });
   if (lists.length) select.value = currentIndex;
@@ -61,6 +63,7 @@ setActiveBtn.addEventListener('click', async () => {
   updateListSelector();
 });
 
+
 async function saveLists() {
   await browser.storage.local.set({lists});
   updateListSelector();
@@ -79,6 +82,7 @@ function showList(index) {
   updatePomodoroDisplay();
   updateStatus();
   setActiveBtn.textContent = list.id === activeListId ? 'Active' : 'Set Active';
+
 }
 
 function renderPatterns(list) {
