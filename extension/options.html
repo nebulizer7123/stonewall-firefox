@@ -15,6 +15,7 @@
     <label for="lists">Select List:</label>
     <select id="lists"></select>
     <button id="addListBtn">Add List</button>
+    <button id="setActive">Set Active</button>
   </div>
   <div id="listSettings">
     <label>Name <input id="listName" type="text"></label>
@@ -36,12 +37,19 @@
       </select>
     </label>
     <div>Status: <span id="listStatus"></span></div>
+    <label>Manual
+      <select id="listManual">
+        <option value="">Auto</option>
+        <option value="block">Block</option>
+        <option value="unblock">Unblock</option>
+      </select>
+    </label>
+    <div>Status: <span id="listStatus"></span></div>
     <button id="saveListSettings">Save Settings</button>
     <h2>Pomodoro</h2>
-
     <input id="pomodoroMinutes" type="number" min="1" value="20">
-
     <button id="startPomodoro">Start</button>
+    <button id="endPomodoro">End</button>
     <button id="endPomodoro">End</button>
     <span id="pomodoroCountdown"></span>
   </div>

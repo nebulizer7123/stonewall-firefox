@@ -1,5 +1,6 @@
 let lists = [];
 let currentIndex = 0;
+let activeListId = null;
 const selectEl = document.getElementById('listSelect');
 const minutesEl = document.getElementById('minutes');
 const countdownEl = document.getElementById('countdown');
@@ -22,7 +23,6 @@ function inSchedule(list) {
   return minutes >= startM || minutes <= endM;
 }
 
-
 function formatTime(ms) {
   const sec = Math.ceil(ms / 1000);
   const m = Math.floor(sec / 60);
@@ -31,20 +31,20 @@ function formatTime(ms) {
 }
 
 async function load() {
-  const data = await browser.storage.local.get({lists: null, lastPopupIndex: 0});
+  const data = await browser.storage.local.get({lists: null, lastPopupIndex: 0, activeListId: null});
   if (!data.lists) {
     data.lists = [{id: Date.now(), name: 'Default Block', type: 'block', patterns: [], start: null, end: null, pomodoro: null, manual: null}];
     await browser.storage.local.set({lists: data.lists});
   }
   lists = data.lists.map(l => Object.assign({manual: null}, l));
-  const active = lists.findIndex(l => l.pomodoro && l.pomodoro.until > Date.now());
-  currentIndex = active !== -1 ? active : data.lastPopupIndex || 0;
+  activeListId = data.activeListId !== null ? data.activeListId : lists[0].id;
+  const active = lists.findIndex(l => l.id === activeListId);
+  currentIndex = active !== -1 ? active : 0;
   minutesEl.value = '20';
   updateSelect();
   updateCountdown();
   manualEl.value = lists[currentIndex].manual || '';
   updateStatus();
-
 }
 
 function updateSelect() {
@@ -52,7 +52,8 @@ function updateSelect() {
   lists.forEach((l, i) => {
     const opt = document.createElement('option');
     opt.value = i;
-    opt.textContent = l.name + (l.type === 'allow' ? ' (Allow Only)' : ' (Block)');
+    const typeLabel = l.type === 'allow' ? ' (Allow Only)' : ' (Block)';
+    opt.textContent = l.name + typeLabel + (l.id === activeListId ? ' [Active]' : '');
     selectEl.appendChild(opt);
   });
   selectEl.value = currentIndex;
@@ -60,11 +61,12 @@ function updateSelect() {
 }
 
 async function save() {
-  await browser.storage.local.set({lists, lastPopupIndex: currentIndex});
+  await browser.storage.local.set({lists, lastPopupIndex: currentIndex, activeListId});
 }
 
 selectEl.addEventListener('change', () => {
   currentIndex = parseInt(selectEl.value, 10);
+  activeListId = lists[currentIndex].id;
   save();
   updateCountdown();
   manualEl.value = lists[currentIndex].manual || '';
@@ -96,7 +98,6 @@ manualEl.addEventListener('change', () => {
   save();
   updateStatus();
 });
-
 
 function updateCountdown() {
   const list = lists[currentIndex];
@@ -137,10 +138,13 @@ browser.storage.onChanged.addListener((changes, area) => {
     if (changes.lists) {
       lists = changes.lists.newValue.map(l => Object.assign({manual: null}, l));
     }
+    if (changes.activeListId) {
+      activeListId = changes.activeListId.newValue;
+    }
     if (changes.lastPopupIndex) {
       currentIndex = changes.lastPopupIndex.newValue;
     }
-    const active = lists.findIndex(l => l.pomodoro && l.pomodoro.until > Date.now());
+    const active = lists.findIndex(l => l.id === activeListId);
     if (active !== -1) currentIndex = active;
     updateSelect();
     updateCountdown();
@@ -149,7 +153,6 @@ browser.storage.onChanged.addListener((changes, area) => {
 });
 
 setInterval(() => { updateCountdown(); updateStatus(); }, 1000);
-
 optionsLink.addEventListener('click', (e) => {
   e.preventDefault();
   browser.runtime.openOptionsPage();
