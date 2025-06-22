@@ -35,6 +35,8 @@ function inSchedule(list) {
 function listActive(list) {
   if (list.manual === 'block') return true;
   if (list.manual === 'unblock') return false;
+  if (list.manual === 'block') return true;
+  if (list.manual === 'unblock') return false;
   if (list.pomodoro) return Date.now() < list.pomodoro.until;
   return inSchedule(list);
 }
@@ -57,7 +59,26 @@ function patternMatches(pattern, url) {
   return false;
 }
 
+function patternMatches(pattern, url) {
+  try {
+    const u = new URL(url);
+    if (pattern.includes('://')) {
+      return url.startsWith(pattern);
+    }
+    const idx = pattern.indexOf('/');
+    const domain = idx === -1 ? pattern : pattern.slice(0, idx);
+    const path = idx === -1 ? '' : pattern.slice(idx);
+    if (u.hostname === domain || u.hostname.endsWith('.' + domain)) {
+      return u.pathname.startsWith(path);
+    }
+  } catch (e) {
+    // ignore malformed URLs
+  }
+  return false;
+}
+
 function matches(list, url) {
+  return list.patterns.some(p => patternMatches(p, url));
   return list.patterns.some(p => patternMatches(p, url));
 }
 
@@ -90,9 +111,12 @@ async function loadData() {
       end: null,
       pomodoro: null,
       manual: null
+      pomodoro: null,
+      manual: null
     }];
     await browser.storage.local.set({lists: data.lists, blocked: []});
   }
+  lists = data.lists.map(l => Object.assign({manual: null}, l));
   lists = data.lists.map(l => Object.assign({manual: null}, l));
   timeSpent = data.timeSpent;
   activeListId = data.activeListId !== null ? data.activeListId : lists[0].id;
