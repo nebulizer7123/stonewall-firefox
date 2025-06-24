@@ -99,11 +99,12 @@ browser.storage.onChanged.addListener((changes, area) => {
   }
 });
 
-browser.webNavigation.onCommitted.addListener((details) => {
-  if (isBlocked(details.url)) {
-    browser.tabs.update(details.tabId, {url: 'about:blank'});
-  }
-});
+
+browser.webRequest.onBeforeRequest.addListener(
+  (details) => ({ cancel: isBlocked(details.url) }),
+  { urls: ["<all_urls>"], types: ["main_frame"] },
+  ["blocking"]
+);
 
 browser.contextMenus.create({
   id: 'stonewall-block',

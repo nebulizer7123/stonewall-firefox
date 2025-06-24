@@ -7,6 +7,7 @@ Stonewall is a Firefox add-on designed to help you avoid distracting websites. I
 - Clear time spent data for specific domains.
 - Schedule when blocked rules are active.
 - Quickly block the current page from the context menu.
+- Reliably cancel requests before they are loaded.
 
 ## Installing
 
@@ -19,6 +20,8 @@ Open the add-on options to add or remove blocked sites and configure optional st
 You can adjust the schedule of existing entries right from the list and start a temporary Pomodoro block for a site.
 The options page also displays how much time you've spent on each domain so far.
 You can remove domains from this list to reset their counters.
+
+Version 0.1.1 adds a web request listener to stop blocked pages before they load.
 
 Blocked entries use the full URL path. For example, blocking `https://www.reddit.com/r/gaming` leaves other Reddit paths accessible.
 
