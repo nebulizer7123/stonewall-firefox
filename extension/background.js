@@ -7,9 +7,20 @@ async function cleanPomodoro() {
   const now = Date.now();
   let changed = false;
   for (const list of lists) {
-    if (list.pomodoro && now >= list.pomodoro.until) {
-      list.pomodoro = null;
-      changed = true;
+    if (!list.pomodoro) continue;
+    if (list.pomodoro.breakUntil) {
+      if (now >= list.pomodoro.breakUntil) {
+        list.pomodoro = null;
+        changed = true;
+      }
+    } else if (now >= list.pomodoro.until) {
+      if (list.pomodoro.breakMinutes) {
+        list.pomodoro.breakUntil = now + list.pomodoro.breakMinutes * 60000;
+        changed = true;
+      } else {
+        list.pomodoro = null;
+        changed = true;
+      }
     }
   }
   if (changed) {
@@ -35,7 +46,12 @@ function inSchedule(list) {
 function listActive(list) {
   if (list.manual === 'block') return true;
   if (list.manual === 'unblock') return false;
-  if (list.pomodoro) return Date.now() < list.pomodoro.until;
+  if (list.pomodoro) {
+    if (list.pomodoro.breakUntil && Date.now() < list.pomodoro.breakUntil) {
+      return false;
+    }
+    return Date.now() < list.pomodoro.until;
+  }
   return inSchedule(list);
 }
 
