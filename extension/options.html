@@ -17,6 +17,15 @@
   <label>Default Break (min)
     <input id="breakDuration" type="number" min="1">
   </label>
+  <div>
+    <label>Break Now (min)
+      <input id="optBreakInput" type="number" min="1">
+    </label>
+    <button class="optQuick" data-duration="5">5</button>
+    <button class="optQuick" data-duration="15">15</button>
+    <button id="optStart">Start Break</button>
+    <button id="optStop" style="display:none;">Stop Break</button>
+  </div>
 
   <h2>Patterns</h2>
   <table id="patternsTable">

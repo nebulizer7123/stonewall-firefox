@@ -7,7 +7,8 @@ const DEFAULT_STATE = {
   sessions: [], // [{days:[0-6], start:'HH:MM', end:'HH:MM', break:5}]
   immediate: false, // manual immediate block
   breakUntil: 0,
-  breakDuration: 5
+  breakDuration: 5,
+  resumeUrl: ''
 };
 
 let state = Object.assign({}, DEFAULT_STATE);
@@ -55,6 +56,7 @@ function checkBreaks() {
   const now = Date.now();
   if (state.breakUntil && now >= state.breakUntil) {
     state.breakUntil = 0;
+    state.resumeUrl = '';
     saveState();
   }
   if (state.immediate || state.breakUntil) return;
@@ -110,12 +112,22 @@ browser.runtime.onMessage.addListener((msg) => {
     return saveState();
   }
   if (msg.type === 'start-break') {
+    const dur = (msg.duration || state.breakDuration) * 60000;
     if (!state.breakUntil || Date.now() >= state.breakUntil) {
-      state.breakUntil = Date.now() + state.breakDuration * 60000;
+      state.breakUntil = Date.now() + dur;
       state.immediate = false;
+      if (msg.url) state.resumeUrl = msg.url;
+      saveState();
+    } else if (msg.url) {
+      state.resumeUrl = msg.url;
       saveState();
     }
     return Promise.resolve(state.breakUntil);
+  }
+  if (msg.type === 'stop-break') {
+    state.breakUntil = 0;
+    state.resumeUrl = '';
+    return saveState();
   }
   if (msg.type === 'unblock-now') {
     state.immediate = false;
