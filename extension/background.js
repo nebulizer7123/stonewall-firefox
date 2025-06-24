@@ -110,6 +110,7 @@ browser.storage.onChanged.addListener((changes, area) => {
   }
 });
 
+
 browser.webNavigation.onCommitted.addListener((details) => {
   if (isBlocked(details.url)) {
     const blockPage = browser.runtime.getURL('blocked.html') +
@@ -135,6 +136,7 @@ browser.runtime.onMessage.addListener((msg) => {
     handleUnblock(msg.url);
   }
 });
+
 
 browser.contextMenus.create({
   id: 'stonewall-block',
