@@ -3,6 +3,7 @@ let currentIndex = 0;
 let activeListId = null;
 const selectEl = document.getElementById('listSelect');
 const minutesEl = document.getElementById('minutes');
+const breakEl = document.getElementById('break');
 const countdownEl = document.getElementById('countdown');
 const endBtn = document.getElementById('end');
 const optionsLink = document.getElementById('openOptions');
@@ -41,6 +42,7 @@ async function load() {
   const active = lists.findIndex(l => l.id === activeListId);
   currentIndex = active !== -1 ? active : 0;
   minutesEl.value = '20';
+  breakEl.value = '5';
   updateSelect();
   updateCountdown();
   manualEl.value = lists[currentIndex].manual || '';
@@ -58,6 +60,10 @@ function updateSelect() {
   });
   selectEl.value = currentIndex;
   manualEl.value = lists[currentIndex].manual || '';
+  if (lists[currentIndex] && lists[currentIndex].pomodoro &&
+      typeof lists[currentIndex].pomodoro.breakMinutes === 'number') {
+    breakEl.value = lists[currentIndex].pomodoro.breakMinutes || 0;
+  }
 }
 
 async function save() {
@@ -70,15 +76,24 @@ selectEl.addEventListener('change', () => {
   save();
   updateCountdown();
   manualEl.value = lists[currentIndex].manual || '';
+  if (lists[currentIndex].pomodoro && typeof lists[currentIndex].pomodoro.breakMinutes === 'number') {
+    breakEl.value = lists[currentIndex].pomodoro.breakMinutes;
+  }
   updateStatus();
 });
 
 document.getElementById('start').addEventListener('click', async () => {
   const minutes = parseInt(minutesEl.value, 10);
+  const breakMin = parseInt(breakEl.value, 10);
   if (!minutes || minutes <= 0) return;
-  lists[currentIndex].pomodoro = {until: Date.now() + minutes * 60000};
+  lists[currentIndex].pomodoro = {
+    until: Date.now() + minutes * 60000,
+    breakMinutes: isNaN(breakMin) || breakMin <= 0 ? 0 : breakMin,
+    breakUntil: null
+  };
   await save();
   minutesEl.value = '20';
+  breakEl.value = '5';
   updateCountdown();
   updateStatus();
 });
@@ -88,6 +103,7 @@ endBtn.addEventListener('click', async () => {
   lists[currentIndex].pomodoro = null;
   await save();
   updateCountdown();
+  breakEl.value = '5';
   updateStatus();
 });
 
@@ -109,6 +125,19 @@ function updateCountdown() {
   const remain = list.pomodoro.until - Date.now();
   if (remain > 0) {
     countdownEl.textContent = formatTime(remain);
+  } else if (list.pomodoro.breakUntil) {
+    const breakRem = list.pomodoro.breakUntil - Date.now();
+    if (breakRem > 0) {
+      countdownEl.textContent = 'Break: ' + formatTime(breakRem);
+    } else {
+      list.pomodoro = null;
+      save();
+      countdownEl.textContent = '';
+    }
+  } else if (list.pomodoro.breakMinutes) {
+    list.pomodoro.breakUntil = Date.now() + list.pomodoro.breakMinutes * 60000;
+    save();
+    countdownEl.textContent = 'Break: ' + formatTime(list.pomodoro.breakMinutes * 60000);
   } else {
     list.pomodoro = null;
     save();
@@ -121,7 +150,14 @@ function computeStatus(list) {
   if (!list) return '';
   if (list.manual === 'block') return 'Blocked';
   if (list.manual === 'unblock') return 'Unblocked';
-  if (list.pomodoro && list.pomodoro.until > Date.now()) return 'Blocked (Pomodoro)';
+  if (list.pomodoro) {
+    if (list.pomodoro.breakUntil && list.pomodoro.breakUntil > Date.now()) {
+      return 'Break';
+    }
+    if (list.pomodoro.until > Date.now()) {
+      return 'Blocked (Pomodoro)';
+    }
+  }
   if (list.start || list.end) {
     return inSchedule(list) ? 'Blocked (Scheduled)' : 'Unblocked';
   }

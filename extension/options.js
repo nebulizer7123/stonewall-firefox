@@ -30,6 +30,7 @@ async function load() {
   if (currentIndex === -1) currentIndex = 0;
   showList(currentIndex);
   document.getElementById('pomodoroMinutes').value = '20';
+  document.getElementById('pomodoroBreak').value = '5';
   updatePomodoroDisplay();
 }
 
@@ -78,6 +79,9 @@ function showList(index) {
   document.getElementById('listStart').value = list.start || '';
   document.getElementById('listEnd').value = list.end || '';
   listManualEl.value = list.manual || '';
+  if (list.pomodoro && typeof list.pomodoro.breakMinutes === 'number') {
+    pomodoroBreakEl.value = list.pomodoro.breakMinutes;
+  }
   renderPatterns(list);
   updatePomodoroDisplay();
   updateStatus();
@@ -132,6 +136,7 @@ const listEndEl = document.getElementById('listEnd');
 const listManualEl = document.getElementById('listManual');
 const statusEl = document.getElementById('listStatus');
 const pomodoroEl = document.getElementById('pomodoroCountdown');
+const pomodoroBreakEl = document.getElementById('pomodoroBreak');
 const setActiveBtn = document.getElementById('setActive');
 
 function inSchedule(list) {
@@ -158,6 +163,19 @@ function updatePomodoroDisplay() {
   const remaining = list.pomodoro.until - Date.now();
   if (remaining > 0) {
     pomodoroEl.textContent = formatTime(Math.ceil(remaining / 1000));
+  } else if (list.pomodoro.breakUntil) {
+    const breakRem = list.pomodoro.breakUntil - Date.now();
+    if (breakRem > 0) {
+      pomodoroEl.textContent = 'Break: ' + formatTime(Math.ceil(breakRem / 1000));
+    } else {
+      pomodoroEl.textContent = '';
+      list.pomodoro = null;
+      saveLists();
+    }
+  } else if (list.pomodoro.breakMinutes) {
+    list.pomodoro.breakUntil = Date.now() + list.pomodoro.breakMinutes * 60000;
+    saveLists();
+    pomodoroEl.textContent = 'Break: ' + formatTime(Math.ceil(list.pomodoro.breakMinutes * 60));
   } else {
     pomodoroEl.textContent = '';
     list.pomodoro = null;
@@ -170,7 +188,12 @@ function computeStatus(list) {
   if (!list) return '';
   if (list.manual === 'block') return 'Blocked';
   if (list.manual === 'unblock') return 'Unblocked';
-  if (list.pomodoro && list.pomodoro.until > Date.now()) return 'Blocked (Pomodoro)';
+  if (list.pomodoro) {
+    if (list.pomodoro.breakUntil && list.pomodoro.breakUntil > Date.now()) {
+      return 'Break';
+    }
+    if (list.pomodoro.until > Date.now()) return 'Blocked (Pomodoro)';
+  }
   if (list.start || list.end) {
     return inSchedule(list) ? 'Blocked (Scheduled)' : 'Unblocked';
   }
@@ -216,9 +239,15 @@ document.getElementById('addPatternForm').addEventListener('submit', async (e) =
 
 document.getElementById('startPomodoro').addEventListener('click', async () => {
   const minutes = parseInt(document.getElementById('pomodoroMinutes').value, 10);
+  const breakMin = parseInt(document.getElementById('pomodoroBreak').value, 10);
   if (isNaN(minutes) || minutes <= 0) return;
-  lists[currentIndex].pomodoro = {until: Date.now() + minutes * 60000};
+  lists[currentIndex].pomodoro = {
+    until: Date.now() + minutes * 60000,
+    breakMinutes: isNaN(breakMin) || breakMin <= 0 ? 0 : breakMin,
+    breakUntil: null
+  };
   document.getElementById('pomodoroMinutes').value = '20';
+  document.getElementById('pomodoroBreak').value = '5';
   await saveLists();
   updatePomodoroDisplay();
 });
@@ -228,6 +257,7 @@ document.getElementById('endPomodoro').addEventListener('click', async () => {
   lists[currentIndex].pomodoro = null;
   await saveLists();
   updatePomodoroDisplay();
+  pomodoroBreakEl.value = '5';
 });
 
 function formatTime(seconds) {
