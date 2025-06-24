@@ -7,7 +7,15 @@
 </head>
 <body class="blocked">
   <p id="msg"></p>
+  <label>Break Duration (min)
+    <input id="durationInput" type="number" min="1">
+  </label>
+  <div>
+    <button class="quickBreak" data-duration="5">5-Minute Break</button>
+    <button class="quickBreak" data-duration="15">15-Minute Break</button>
+  </div>
   <button id="breakBtn">Start Break</button>
+  <button id="stopBreakBtn" style="display:none;">Stop Break</button>
   <div id="progressContainer"><div id="progressBar"></div></div>
   <div id="breakTimer"></div>
   <script src="blocked.js"></script>
