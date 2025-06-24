@@ -6,63 +6,39 @@
   <style>
     table { border-collapse: collapse; }
     td, th { border: 1px solid #ccc; padding: 4px 8px; }
-    input[type="text"] { width: 100%; }
+    input[type="text"], input[type="time"] { width: 100%; }
   </style>
 </head>
 <body>
   <h1>Stonewall Options</h1>
-  <div id="listSelector">
-    <label for="lists">Select List:</label>
-    <select id="lists"></select>
-    <button id="addListBtn">Add List</button>
-    <button id="setActive">Set Active</button>
-
-  </div>
-  <div id="listSettings">
-    <label>Name <input id="listName" type="text"></label>
-    <label>Type
-      <select id="listType">
-        <option value="block">Block</option>
-        <option value="allow">Allow Only</option>
-      </select>
-    </label>
-    <label for="listStart">Start time</label>
-    <input id="listStart" type="time">
-    <label for="listEnd">End time</label>
-    <input id="listEnd" type="time">
-    <label>Manual
-      <select id="listManual">
-        <option value="">Auto</option>
-        <option value="block">Block</option>
-        <option value="unblock">Unblock</option>
-      </select>
-    </label>
-    <div>Status: <span id="listStatus"></span></div>
-    <button id="saveListSettings">Save Settings</button>
-    <h2>Pomodoro</h2>
-    <label>Focus Minutes <input id="pomodoroMinutes" type="number" min="1" value="20"></label>
-    <label>Break Minutes <input id="pomodoroBreak" type="number" min="0" value="5"></label>
-
-    <button id="startPomodoro">Start</button>
-    <button id="endPomodoro">End</button>
-    <span id="pomodoroCountdown"></span>
-  </div>
+  <label>Mode
+    <select id="mode">
+      <option value="block">Block</option>
+      <option value="allow">Allow Only</option>
+    </select>
+  </label>
+  <label><input id="immediate" type="checkbox"> Immediate Block</label>
 
   <h2>Patterns</h2>
   <table id="patternsTable">
-    <thead><tr><th>URL Pattern</th><th>Remove</th></tr></thead>
+    <thead><tr><th>URL Pattern</th><th></th></tr></thead>
     <tbody></tbody>
   </table>
   <form id="addPatternForm">
-    <input id="newPattern" type="text" placeholder="URL pattern" required>
+    <input id="newPattern" type="text" placeholder="https://example.com/path" required>
     <button type="submit">Add</button>
   </form>
 
-  <h2>Time Spent</h2>
-  <table>
-    <thead><tr><th>Domain</th><th>Time</th><th></th></tr></thead>
-    <tbody id="statsList"></tbody>
+  <h2>Focus Sessions</h2>
+  <table id="sessionsTable">
+    <thead>
+      <tr>
+        <th>Days</th><th>Start</th><th>End</th><th>Break (min)</th><th></th>
+      </tr>
+    </thead>
+    <tbody></tbody>
   </table>
+  <button id="addSession">Add Session</button>
 
   <script src="options.js"></script>
 </body>

@@ -4,27 +4,13 @@
   <meta charset="utf-8">
   <title>Stonewall</title>
   <style>
-    body { font-family: sans-serif; width: 250px; }
-    label, select, input, button { display: block; width: 100%; margin: 4px 0; }
+    body { font-family: sans-serif; width: 200px; }
+    button { width: 100%; margin: 4px 0; }
   </style>
 </head>
 <body>
-  <label for="listSelect">List</label>
-  <select id="listSelect"></select>
-  <label for="minutes">Focus Minutes</label>
-  <input id="minutes" type="number" min="1" value="20">
-  <label for="break">Break Minutes</label>
-  <input id="break" type="number" min="0" value="5">
-  <label for="manual">Manual</label>
-  <select id="manual">
-    <option value="">Auto</option>
-    <option value="block">Block</option>
-    <option value="unblock">Unblock</option>
-  </select>
-  <button id="start">Start Pomodoro</button>
-  <button id="end">End Pomodoro</button>
-  <div id="countdown"></div>
-  <div id="status"></div>
+  <div id="state"></div>
+  <button id="toggle"></button>
   <a id="openOptions" href="#">Preferences</a>
   <script src="popup.js"></script>
 </body>
