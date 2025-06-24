@@ -1,288 +1,169 @@
-let lists = [];
-let currentIndex = 0;
-let activeListId = null;
+'use strict';
 
-async function ensureLists() {
-  const data = await browser.storage.local.get({lists: null, blocked: [], activeListId: null});
+const modeEl = document.getElementById('mode');
+const immediateEl = document.getElementById('immediate');
+const patternsBody = document.querySelector('#patternsTable tbody');
+const sessionsBody = document.querySelector('#sessionsTable tbody');
 
-  if (!data.lists) {
-    data.lists = [{
-      id: Date.now(),
-      name: 'Default Block',
-      type: 'block',
-      patterns: data.blocked.map(e => e.pattern),
-      start: null,
-      end: null,
-      pomodoro: null
-    }];
-    await browser.storage.local.set({lists: data.lists, blocked: []});
-  }
-  lists = data.lists;
-  activeListId = data.activeListId !== null ? data.activeListId : data.lists[0].id;
-  return data;
-}
+let state = {
+  mode: 'block',
+  patterns: [],
+  sessions: [],
+  immediate: false,
+  breakUntil: 0
+};
 
 async function load() {
-  const data = await ensureLists();
-  updateListSelector();
-  updateStats(data.timeSpent || {});
-  currentIndex = lists.findIndex(l => l.id === activeListId);
-  if (currentIndex === -1) currentIndex = 0;
-  showList(currentIndex);
-  document.getElementById('pomodoroMinutes').value = '20';
-  updatePomodoroDisplay();
+  const data = await browser.storage.local.get(Object.keys(state));
+  Object.assign(state, data);
+  modeEl.value = state.mode;
+  immediateEl.checked = state.immediate;
+  renderPatterns();
+  renderSessions();
 }
 
-function updateListSelector() {
-  const select = document.getElementById('lists');
-  select.innerHTML = '';
-  lists.forEach((l, i) => {
-    const opt = document.createElement('option');
-    opt.value = i;
-    opt.textContent = l.name + (l.id === activeListId ? ' (Active)' : '');
-
-    select.appendChild(opt);
-  });
-  if (lists.length) select.value = currentIndex;
+function save() {
+  return browser.storage.local.set(state);
 }
 
-document.getElementById('lists').addEventListener('change', (e) => {
-  currentIndex = parseInt(e.target.value, 10);
-  showList(currentIndex);
-});
-
-document.getElementById('addListBtn').addEventListener('click', async () => {
-  lists.push({id: Date.now(), name: 'New List', type: 'block', patterns: [], start: null, end: null, pomodoro: null});
-  currentIndex = lists.length - 1;
-  await saveLists();
-});
-
-setActiveBtn.addEventListener('click', async () => {
-  activeListId = lists[currentIndex].id;
-  await browser.storage.local.set({activeListId});
-  updateListSelector();
-});
-
-
-async function saveLists() {
-  await browser.storage.local.set({lists});
-  updateListSelector();
-  showList(currentIndex);
-}
-
-function showList(index) {
-  if (!lists[index]) return;
-  const list = lists[index];
-  document.getElementById('listName').value = list.name;
-  document.getElementById('listType').value = list.type;
-  document.getElementById('listStart').value = list.start || '';
-  document.getElementById('listEnd').value = list.end || '';
-  listManualEl.value = list.manual || '';
-  renderPatterns(list);
-  updatePomodoroDisplay();
-  updateStatus();
-  setActiveBtn.textContent = list.id === activeListId ? 'Active' : 'Set Active';
-
-}
-
-function renderPatterns(list) {
-  const tbody = document.querySelector('#patternsTable tbody');
-  tbody.innerHTML = '';
-  list.patterns.forEach((p, i) => {
+function renderPatterns() {
+  patternsBody.innerHTML = '';
+  state.patterns.forEach((p, i) => {
     const tr = document.createElement('tr');
     const tdIn = document.createElement('td');
     const input = document.createElement('input');
     input.type = 'text';
     input.value = p;
-    const saveInput = async () => {
-      const val = input.value.trim();
-      if (val) {
-        list.patterns[i] = val;
+    input.addEventListener('change', () => {
+      if (input.value.trim()) {
+        state.patterns[i] = input.value.trim();
       } else {
-        list.patterns.splice(i, 1);
+        state.patterns.splice(i, 1);
       }
-
-      await saveLists();
-    };
-    input.addEventListener('blur', saveInput);
-    input.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        input.blur();
-      }
+      save();
+      renderPatterns();
     });
     tdIn.appendChild(input);
     const tdAct = document.createElement('td');
-    const remove = document.createElement('button');
-    remove.textContent = 'Remove';
-    remove.addEventListener('click', async () => {
-      list.patterns.splice(i, 1);
-      await saveLists();
+    const btn = document.createElement('button');
+    btn.textContent = 'Remove';
+    btn.addEventListener('click', () => {
+      state.patterns.splice(i, 1);
+      save();
+      renderPatterns();
     });
-    tdAct.appendChild(remove);
+    tdAct.appendChild(btn);
     tr.appendChild(tdIn);
     tr.appendChild(tdAct);
-    tbody.appendChild(tr);
+    patternsBody.appendChild(tr);
   });
 }
 
-const listNameEl = document.getElementById('listName');
-const listTypeEl = document.getElementById('listType');
-const listStartEl = document.getElementById('listStart');
-const listEndEl = document.getElementById('listEnd');
-const listManualEl = document.getElementById('listManual');
-const statusEl = document.getElementById('listStatus');
-const pomodoroEl = document.getElementById('pomodoroCountdown');
-const setActiveBtn = document.getElementById('setActive');
-
-function inSchedule(list) {
-  if (!list.start || !list.end) return true;
-  const now = new Date();
-  const minutes = now.getHours() * 60 + now.getMinutes();
-  const [sh, sm] = list.start.split(':').map(Number);
-  const [eh, em] = list.end.split(':').map(Number);
-  const startM = sh * 60 + sm;
-  const endM = eh * 60 + em;
-  if (startM <= endM) {
-    return minutes >= startM && minutes <= endM;
-  }
-  return minutes >= startM || minutes <= endM;
+function renderSessions() {
+  sessionsBody.innerHTML = '';
+  state.sessions.forEach((s, idx) => {
+    const tr = document.createElement('tr');
+    const tdDays = document.createElement('td');
+    const days = ['S','M','T','W','T','F','S'];
+    days.forEach((d, i) => {
+      const label = document.createElement('label');
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.checked = s.days.includes(i);
+      cb.addEventListener('change', () => {
+        if (cb.checked) {
+          if (!s.days.includes(i)) s.days.push(i);
+        } else {
+          s.days = s.days.filter(x => x !== i);
+        }
+        save();
+      });
+      label.appendChild(cb);
+      label.appendChild(document.createTextNode(d));
+      tdDays.appendChild(label);
+    });
+    const tdStart = document.createElement('td');
+    const start = document.createElement('input');
+    start.type = 'time';
+    start.value = s.start;
+    start.addEventListener('change', () => {
+      s.start = start.value;
+      save();
+    });
+    tdStart.appendChild(start);
+    const tdEnd = document.createElement('td');
+    const end = document.createElement('input');
+    end.type = 'time';
+    end.value = s.end;
+    end.addEventListener('change', () => {
+      s.end = end.value;
+      save();
+    });
+    tdEnd.appendChild(end);
+    const tdBreak = document.createElement('td');
+    const br = document.createElement('input');
+    br.type = 'number';
+    br.min = '0';
+    br.value = s.break;
+    br.addEventListener('change', () => {
+      s.break = parseInt(br.value, 10) || 0;
+      save();
+    });
+    tdBreak.appendChild(br);
+    const tdAct = document.createElement('td');
+    const rem = document.createElement('button');
+    rem.textContent = 'Remove';
+    rem.addEventListener('click', () => {
+      state.sessions.splice(idx, 1);
+      save();
+      renderSessions();
+    });
+    tdAct.appendChild(rem);
+    tr.appendChild(tdDays);
+    tr.appendChild(tdStart);
+    tr.appendChild(tdEnd);
+    tr.appendChild(tdBreak);
+    tr.appendChild(tdAct);
+    sessionsBody.appendChild(tr);
+  });
 }
 
-function updatePomodoroDisplay() {
-  const list = lists[currentIndex];
-  if (!list || !list.pomodoro) {
-    pomodoroEl.textContent = '';
-    updateStatus();
-    return;
-  }
-  const remaining = list.pomodoro.until - Date.now();
-  if (remaining > 0) {
-    pomodoroEl.textContent = formatTime(Math.ceil(remaining / 1000));
-  } else {
-    pomodoroEl.textContent = '';
-    list.pomodoro = null;
-    saveLists();
-  }
-  updateStatus();
-}
-
-function computeStatus(list) {
-  if (!list) return '';
-  if (list.manual === 'block') return 'Blocked';
-  if (list.manual === 'unblock') return 'Unblocked';
-  if (list.pomodoro && list.pomodoro.until > Date.now()) return 'Blocked (Pomodoro)';
-  if (list.start || list.end) {
-    return inSchedule(list) ? 'Blocked (Scheduled)' : 'Unblocked';
-  }
-  return 'Unblocked';
-}
-
-function updateStatus() {
-  const list = lists[currentIndex];
-  statusEl.textContent = computeStatus(list);
-}
-
-function saveCurrentListFields() {
-  const list = lists[currentIndex];
-
-  list.name = listNameEl.value.trim() || 'Unnamed';
-  list.type = listTypeEl.value;
-  list.start = listStartEl.value || null;
-  list.end = listEndEl.value || null;
-  list.manual = listManualEl.value || null;
-  return saveLists();
-}
-
-document.getElementById('saveListSettings').addEventListener('click', saveCurrentListFields);
-
-listNameEl.addEventListener('blur', saveCurrentListFields);
-listNameEl.addEventListener('input', saveCurrentListFields);
-listTypeEl.addEventListener('change', saveCurrentListFields);
-listStartEl.addEventListener('change', saveCurrentListFields);
-listEndEl.addEventListener('change', saveCurrentListFields);
-listManualEl.addEventListener('change', () => {
-  saveCurrentListFields();
-  updateStatus();
+modeEl.addEventListener('change', () => {
+  state.mode = modeEl.value;
+  save();
 });
 
-document.getElementById('addPatternForm').addEventListener('submit', async (e) => {
+immediateEl.addEventListener('change', () => {
+  state.immediate = immediateEl.checked;
+  save();
+});
+
+document.getElementById('addPatternForm').addEventListener('submit', (e) => {
   e.preventDefault();
   const val = document.getElementById('newPattern').value.trim();
   if (!val) return;
-  lists[currentIndex].patterns.push(val);
+  state.patterns.push(val);
   document.getElementById('newPattern').value = '';
-  await saveLists();
+  save();
+  renderPatterns();
 });
 
-document.getElementById('startPomodoro').addEventListener('click', async () => {
-  const minutes = parseInt(document.getElementById('pomodoroMinutes').value, 10);
-  if (isNaN(minutes) || minutes <= 0) return;
-  lists[currentIndex].pomodoro = {until: Date.now() + minutes * 60000};
-  document.getElementById('pomodoroMinutes').value = '20';
-  await saveLists();
-  updatePomodoroDisplay();
+document.getElementById('addSession').addEventListener('click', () => {
+  state.sessions.push({days: [1,2,3,4,5], start: '09:00', end: '17:00', break: 5});
+  save();
+  renderSessions();
 });
-
-document.getElementById('endPomodoro').addEventListener('click', async () => {
-  if (!lists[currentIndex]) return;
-  lists[currentIndex].pomodoro = null;
-  await saveLists();
-  updatePomodoroDisplay();
-});
-
-function formatTime(seconds) {
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const s = seconds % 60;
-  const parts = [];
-  if (h) parts.push(`${h}h`);
-  if (m) parts.push(`${m}m`);
-  parts.push(`${s}s`);
-  return parts.join(' ');
-}
-
-function updateStats(stats) {
-  const ul = document.getElementById('statsList');
-  ul.innerHTML = '';
-  const entries = Object.entries(stats).sort((a, b) => b[1] - a[1]);
-  entries.forEach(([domain, seconds]) => {
-    const tr = document.createElement('tr');
-    const tdDom = document.createElement('td');
-    tdDom.textContent = domain;
-    const tdTime = document.createElement('td');
-    tdTime.textContent = formatTime(seconds);
-    const tdAct = document.createElement('td');
-    const btn = document.createElement('button');
-    btn.textContent = 'Remove';
-    btn.addEventListener('click', async () => {
-      const data = await browser.storage.local.get({timeSpent: {}});
-      delete data.timeSpent[domain];
-      await browser.storage.local.set({timeSpent: data.timeSpent});
-      load();
-    });
-    tdAct.appendChild(btn);
-    tr.appendChild(tdDom);
-    tr.appendChild(tdTime);
-    tr.appendChild(tdAct);
-    ul.appendChild(tr);
-  });
-}
 
 browser.storage.onChanged.addListener((changes, area) => {
   if (area === 'local') {
-    if (changes.lists) {
-      lists = changes.lists.newValue;
-      updateListSelector();
-      showList(currentIndex);
+    for (const k of Object.keys(changes)) {
+      state[k] = changes[k].newValue;
     }
-    if (changes.activeListId) {
-      activeListId = changes.activeListId.newValue;
-      updateListSelector();
-    }
-    if (changes.timeSpent) updateStats(changes.timeSpent.newValue);
+    modeEl.value = state.mode;
+    immediateEl.checked = state.immediate;
+    renderPatterns();
+    renderSessions();
   }
 });
-
-setInterval(() => { updatePomodoroDisplay(); updateStatus(); }, 1000);
 
 load();
