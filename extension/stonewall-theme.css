@@ -1,0 +1,88 @@
+/* Stonewall Extension Theme */
+
+body {
+  font-family: Roboto, sans-serif;
+  font-size: 16px;
+  color: #333333;
+  background-color: #ffffff;
+  margin: 0;
+  padding: 16px;
+}
+
+h1, h2 {
+  font-size: 18px;
+  margin-top: 0;
+}
+
+button {
+  background-color: #5a9b8e;
+  color: #ffffff;
+  border: none;
+  padding: 8px 16px;
+  margin: 4px 0;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+button:hover {
+  background-color: #4a7c7a;
+}
+
+button:disabled {
+  background-color: #dcdcdc;
+  color: #a0a0a0;
+  cursor: default;
+}
+
+table {
+  border-collapse: collapse;
+  margin-bottom: 20px;
+  width: 100%;
+  box-shadow: 0px 4px 10px rgba(0,0,0,0.1);
+}
+
+td, th {
+  border: 1px solid #ccc;
+  padding: 4px 8px;
+}
+
+input[type="text"],
+input[type="time"],
+select {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #cfcfcf;
+  border-radius: 4px;
+  box-sizing: border-box;
+  box-shadow: 0px 2px 4px rgba(0,0,0,0.05);
+}
+
+input[type="text"]:focus,
+input[type="time"]:focus,
+select:focus {
+  outline: none;
+  border-color: #5a9b8e;
+}
+
+#state {
+  margin-bottom: 8px;
+}
+
+a {
+  color: #5a9b8e;
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* Modal styles placeholder for future popups */
+.modal {
+  background-color: rgba(255, 255, 255, 0.95);
+  border-radius: 12px;
+  box-shadow: 0px 6px 15px rgba(72, 113, 103, 0.3);
+  padding: 16px;
+}
+
