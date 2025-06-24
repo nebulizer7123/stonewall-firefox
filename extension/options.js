@@ -2,6 +2,7 @@
 
 const modeEl = document.getElementById('mode');
 const immediateEl = document.getElementById('immediate');
+const breakDurationEl = document.getElementById('breakDuration');
 const patternsBody = document.querySelector('#patternsTable tbody');
 const sessionsBody = document.querySelector('#sessionsTable tbody');
 
@@ -10,7 +11,8 @@ let state = {
   patterns: [],
   sessions: [],
   immediate: false,
-  breakUntil: 0
+  breakUntil: 0,
+  breakDuration: 5
 };
 
 async function load() {
@@ -18,6 +20,7 @@ async function load() {
   Object.assign(state, data);
   modeEl.value = state.mode;
   immediateEl.checked = state.immediate;
+  breakDurationEl.value = state.breakDuration;
   renderPatterns();
   renderSessions();
 }
@@ -138,6 +141,11 @@ immediateEl.addEventListener('change', () => {
   save();
 });
 
+breakDurationEl.addEventListener('change', () => {
+  state.breakDuration = parseInt(breakDurationEl.value, 10) || 0;
+  save();
+});
+
 document.getElementById('addPatternForm').addEventListener('submit', (e) => {
   e.preventDefault();
   const val = document.getElementById('newPattern').value.trim();
@@ -161,6 +169,7 @@ browser.storage.onChanged.addListener((changes, area) => {
     }
     modeEl.value = state.mode;
     immediateEl.checked = state.immediate;
+    breakDurationEl.value = state.breakDuration;
     renderPatterns();
     renderSessions();
   }

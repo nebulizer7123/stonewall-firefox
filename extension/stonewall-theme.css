@@ -86,3 +86,33 @@ a:hover {
   padding: 16px;
 }
 
+/* Blocked page layout */
+body.blocked {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  text-align: center;
+}
+
+#breakTimer {
+  margin-top: 8px;
+}
+
+#progressContainer {
+  width: 80%;
+  height: 12px;
+  background-color: #dcdcdc;
+  border-radius: 6px;
+  margin-top: 8px;
+  overflow: hidden;
+}
+
+#progressBar {
+  height: 100%;
+  width: 0;
+  background: linear-gradient(to right, #a8d5ba, #5a9b8e);
+  transition: width 1s linear;
+}
+

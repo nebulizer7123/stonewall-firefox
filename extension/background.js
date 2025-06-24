@@ -6,7 +6,8 @@ const DEFAULT_STATE = {
   patterns: [], // list of URL patterns
   sessions: [], // [{days:[0-6], start:'HH:MM', end:'HH:MM', break:5}]
   immediate: false, // manual immediate block
-  breakUntil: 0
+  breakUntil: 0,
+  breakDuration: 5
 };
 
 let state = Object.assign({}, DEFAULT_STATE);
@@ -73,8 +74,8 @@ function checkBreaks() {
 }
 
 function focusActive() {
-  if (state.immediate) return true;
   if (state.breakUntil && Date.now() < state.breakUntil) return false;
+  if (state.immediate) return true;
   return state.sessions.some(withinSession);
 }
 
@@ -107,6 +108,14 @@ browser.runtime.onMessage.addListener((msg) => {
       if (idx !== -1) state.patterns.splice(idx, 1);
     }
     return saveState();
+  }
+  if (msg.type === 'start-break') {
+    if (!state.breakUntil || Date.now() >= state.breakUntil) {
+      state.breakUntil = Date.now() + state.breakDuration * 60000;
+      state.immediate = false;
+      saveState();
+    }
+    return Promise.resolve(state.breakUntil);
   }
   if (msg.type === 'unblock-now') {
     state.immediate = false;
