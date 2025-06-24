@@ -142,6 +142,7 @@ function saveCurrentListFields() {
 document.getElementById('saveListSettings').addEventListener('click', saveCurrentListFields);
 
 listNameEl.addEventListener('blur', saveCurrentListFields);
+listNameEl.addEventListener('input', saveCurrentListFields);
 listTypeEl.addEventListener('change', saveCurrentListFields);
 listStartEl.addEventListener('change', saveCurrentListFields);
 listEndEl.addEventListener('change', saveCurrentListFields);
