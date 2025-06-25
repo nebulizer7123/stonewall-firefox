@@ -12,10 +12,24 @@ const DEFAULT_STATE = {
 };
 
 let state = Object.assign({}, DEFAULT_STATE);
+let lastFocus = false;
+
+async function enforceBlocking() {
+  const tabs = await browser.tabs.query({});
+  for (const tab of tabs) {
+    if (tab.url && isBlocked(tab.url)) {
+      const blockedUrl = browser.runtime.getURL('blocked.html') +
+        '?url=' + encodeURIComponent(tab.url);
+      browser.tabs.update(tab.id, { url: blockedUrl });
+    }
+  }
+}
 
 async function loadState() {
   const data = await browser.storage.local.get(Object.keys(DEFAULT_STATE));
   state = Object.assign({}, DEFAULT_STATE, data);
+  lastFocus = focusActive();
+  if (lastFocus) enforceBlocking();
 }
 
 function saveState() {
@@ -58,6 +72,8 @@ function checkBreaks() {
     state.breakUntil = 0;
     state.resumeUrl = '';
     saveState();
+    enforceBlocking();
+    checkFocusChange();
   }
   if (state.immediate || state.breakUntil) return;
   for (const ses of state.sessions) {
@@ -73,12 +89,21 @@ function checkBreaks() {
       }
     }
   }
+  checkFocusChange();
 }
 
 function focusActive() {
   if (state.breakUntil && Date.now() < state.breakUntil) return false;
   if (state.immediate) return true;
   return state.sessions.some(withinSession);
+}
+
+function checkFocusChange() {
+  const active = focusActive();
+  if (active && !lastFocus) {
+    enforceBlocking();
+  }
+  lastFocus = active;
 }
 
 function isBlocked(url) {
@@ -98,6 +123,16 @@ browser.webNavigation.onCommitted.addListener(details => {
   if (isBlocked(details.url)) {
     const blockedUrl = browser.runtime.getURL('blocked.html') + '?url=' + encodeURIComponent(details.url);
     browser.tabs.update(details.tabId, {url: blockedUrl});
+  }
+});
+
+// Some sites update the URL without a full navigation (e.g. via the history
+// API). Listen for tab updates so we catch those changes as well as normal
+// loads.
+browser.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (changeInfo.url && isBlocked(changeInfo.url)) {
+    const blockedUrl = browser.runtime.getURL('blocked.html') + '?url=' + encodeURIComponent(changeInfo.url);
+    browser.tabs.update(tabId, { url: blockedUrl });
   }
 });
 
@@ -122,20 +157,29 @@ browser.runtime.onMessage.addListener((msg) => {
       state.resumeUrl = msg.url;
       saveState();
     }
+    checkFocusChange();
     return Promise.resolve(state.breakUntil);
   }
   if (msg.type === 'stop-break') {
     state.breakUntil = 0;
     state.resumeUrl = '';
-    return saveState();
+    const p = saveState();
+    enforceBlocking();
+    checkFocusChange();
+    return p;
   }
   if (msg.type === 'unblock-now') {
     state.immediate = false;
-    return saveState();
+    const p = saveState();
+    checkFocusChange();
+    return p;
   } else if (msg.type === 'block-now') {
     state.immediate = true;
     state.breakUntil = 0;
-    return saveState();
+    const p = saveState();
+    enforceBlocking();
+    checkFocusChange();
+    return p;
   }
 });
 
@@ -144,6 +188,8 @@ browser.storage.onChanged.addListener((changes, area) => {
     for (const key of Object.keys(changes)) {
       state[key] = changes[key].newValue;
     }
+    enforceBlocking();
+    checkFocusChange();
   }
 });
 
