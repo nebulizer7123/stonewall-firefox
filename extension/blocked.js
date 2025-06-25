@@ -12,7 +12,6 @@ const quickBtns = document.querySelectorAll('.quickBreak');
 
 let breakUntil = 0;
 let breakDuration = 0; // ms
-let redirectOnEnd = false;
 let intervalId = null;
 
 msgEl.textContent = `The following URL is blocked: ${url}`;
@@ -30,10 +29,7 @@ function updateTimer() {
     quickBtns.forEach(b => b.disabled = false);
     stopBtn.style.display = 'none';
     breakUntil = 0;
-    if (redirectOnEnd) {
-      redirectOnEnd = false;
-      location.href = url;
-    }
+    // When the break ends, controls reset but no automatic redirect occurs
     return;
   }
   const sec = Math.ceil(rem / 1000);
@@ -57,13 +53,12 @@ async function startBreak(duration) {
   stopBtn.style.display = 'inline-block';
   updateTimer();
   if (!intervalId) intervalId = setInterval(updateTimer, 1000);
-  redirectOnEnd = true;
+  location.href = url;
 }
 
 async function stopBreak() {
   await browser.runtime.sendMessage({ type: 'stop-break' });
   breakUntil = 0;
-  redirectOnEnd = false;
   updateTimer();
 }
 
@@ -78,7 +73,6 @@ stopBtn.addEventListener('click', stopBreak);
   breakUntil = data.breakUntil || 0;
   breakDuration = (data.breakDuration || 5) * 60000;
   durInput.value = data.breakDuration || 5;
-  if (data.resumeUrl && data.resumeUrl === url) redirectOnEnd = true;
   if (breakUntil > Date.now()) {
     btn.disabled = true;
     durInput.disabled = true;
