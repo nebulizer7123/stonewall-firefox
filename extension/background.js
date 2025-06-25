@@ -126,6 +126,16 @@ browser.webNavigation.onCommitted.addListener(details => {
   }
 });
 
+// Some sites update the URL without a full navigation (e.g. via the history
+// API). Listen for tab updates so we catch those changes as well as normal
+// loads.
+browser.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (changeInfo.url && isBlocked(changeInfo.url)) {
+    const blockedUrl = browser.runtime.getURL('blocked.html') + '?url=' + encodeURIComponent(changeInfo.url);
+    browser.tabs.update(tabId, { url: blockedUrl });
+  }
+});
+
 browser.runtime.onMessage.addListener((msg) => {
   if (msg.type === 'unblockUrl' && msg.url) {
     if (state.mode === 'allow') {
