@@ -14,6 +14,22 @@ const DEFAULT_STATE = {
 let state = Object.assign({}, DEFAULT_STATE);
 let lastFocus = false;
 
+
+async function restoreTabs() {
+  const blockedPage = browser.runtime.getURL('blocked.html');
+  const tabs = await browser.tabs.query({});
+  for (const tab of tabs) {
+    if (tab.url && tab.url.startsWith(blockedPage)) {
+      const query = tab.url.split('?')[1] || '';
+      const url = new URLSearchParams(query).get('url');
+      if (url) {
+        browser.tabs.update(tab.id, { url });
+      }
+    }
+  }
+}
+
+
 async function enforceBlocking() {
   const tabs = await browser.tabs.query({});
   for (const tab of tabs) {
@@ -29,7 +45,13 @@ async function loadState() {
   const data = await browser.storage.local.get(Object.keys(DEFAULT_STATE));
   state = Object.assign({}, DEFAULT_STATE, data);
   lastFocus = focusActive();
-  if (lastFocus) enforceBlocking();
+
+  if (lastFocus) {
+    enforceBlocking();
+  } else {
+    restoreTabs();
+  }
+
 }
 
 function saveState() {
@@ -102,6 +124,10 @@ function checkFocusChange() {
   const active = focusActive();
   if (active && !lastFocus) {
     enforceBlocking();
+
+  } else if (!active && lastFocus) {
+    restoreTabs();
+
   }
   lastFocus = active;
 }
