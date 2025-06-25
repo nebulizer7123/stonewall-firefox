@@ -14,6 +14,7 @@ const DEFAULT_STATE = {
 let state = Object.assign({}, DEFAULT_STATE);
 let lastFocus = false;
 
+
 async function restoreTabs() {
   const blockedPage = browser.runtime.getURL('blocked.html');
   const tabs = await browser.tabs.query({});
@@ -27,6 +28,7 @@ async function restoreTabs() {
     }
   }
 }
+
 
 async function enforceBlocking() {
   const tabs = await browser.tabs.query({});
@@ -43,11 +45,13 @@ async function loadState() {
   const data = await browser.storage.local.get(Object.keys(DEFAULT_STATE));
   state = Object.assign({}, DEFAULT_STATE, data);
   lastFocus = focusActive();
+
   if (lastFocus) {
     enforceBlocking();
   } else {
     restoreTabs();
   }
+
 }
 
 function saveState() {
@@ -120,8 +124,10 @@ function checkFocusChange() {
   const active = focusActive();
   if (active && !lastFocus) {
     enforceBlocking();
+
   } else if (!active && lastFocus) {
     restoreTabs();
+
   }
   lastFocus = active;
 }
