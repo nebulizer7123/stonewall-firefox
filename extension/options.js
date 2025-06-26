@@ -9,10 +9,12 @@ const optStop = document.getElementById('optStop');
 const optQuickBtns = document.querySelectorAll('.optQuick');
 const patternsBody = document.querySelector('#patternsTable tbody');
 const sessionsBody = document.querySelector('#sessionsTable tbody');
+const patternsHeading = document.getElementById('patternsHeading');
 
 let state = {
   mode: 'block',
-  patterns: [],
+  blockPatterns: [],
+  allowPatterns: [],
   sessions: [],
   immediate: false,
   breakUntil: 0,
@@ -26,6 +28,7 @@ async function load() {
   immediateEl.checked = state.immediate;
   breakDurationEl.value = state.breakDuration;
   optBreakInput.value = state.breakDuration;
+  updatePatternsHeading();
   renderPatterns();
   renderSessions();
   updateBreakControls();
@@ -49,9 +52,18 @@ function updateBreakControls() {
   }
 }
 
+function updatePatternsHeading() {
+  patternsHeading.textContent = state.mode === 'block' ? 'Block List' : 'Allow List';
+}
+
+function getActiveList() {
+  return state.mode === 'block' ? state.blockPatterns : state.allowPatterns;
+}
+
 function renderPatterns() {
   patternsBody.innerHTML = '';
-  state.patterns.forEach((p, i) => {
+  const list = getActiveList();
+  list.forEach((p, i) => {
     const tr = document.createElement('tr');
     const tdIn = document.createElement('td');
     const input = document.createElement('input');
@@ -59,9 +71,9 @@ function renderPatterns() {
     input.value = p;
     input.addEventListener('change', () => {
       if (input.value.trim()) {
-        state.patterns[i] = input.value.trim();
+        list[i] = input.value.trim();
       } else {
-        state.patterns.splice(i, 1);
+        list.splice(i, 1);
       }
       save();
       renderPatterns();
@@ -71,7 +83,7 @@ function renderPatterns() {
     const btn = document.createElement('button');
     btn.textContent = 'Remove';
     btn.addEventListener('click', () => {
-      state.patterns.splice(i, 1);
+      list.splice(i, 1);
       save();
       renderPatterns();
     });
@@ -153,7 +165,9 @@ function renderSessions() {
 
 modeEl.addEventListener('change', () => {
   state.mode = modeEl.value;
+  updatePatternsHeading();
   save();
+  renderPatterns();
 });
 
 immediateEl.addEventListener('change', () => {
@@ -187,7 +201,8 @@ document.getElementById('addPatternForm').addEventListener('submit', (e) => {
   e.preventDefault();
   const val = document.getElementById('newPattern').value.trim();
   if (!val) return;
-  state.patterns.push(val);
+  const list = getActiveList();
+  list.push(val);
   document.getElementById('newPattern').value = '';
   save();
   renderPatterns();
@@ -208,6 +223,7 @@ browser.storage.onChanged.addListener((changes, area) => {
     immediateEl.checked = state.immediate;
     breakDurationEl.value = state.breakDuration;
     optBreakInput.value = state.breakDuration;
+    updatePatternsHeading();
     renderPatterns();
     renderSessions();
     updateBreakControls();
