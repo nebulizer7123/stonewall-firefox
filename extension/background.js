@@ -159,7 +159,8 @@ function isBlocked(url) {
 }
 
 browser.webNavigation.onCommitted.addListener(details => {
-  if (isBlocked(details.url)) {
+  // Only evaluate the top-level frame to avoid blocking embedded resources
+  if (details.frameId === 0 && isBlocked(details.url)) {
     const blockedUrl = browser.runtime.getURL('blocked.html') + '?url=' + encodeURIComponent(details.url);
     browser.tabs.update(details.tabId, {url: blockedUrl});
   }
