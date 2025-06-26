@@ -3,7 +3,8 @@
 // Storage keys
 const DEFAULT_STATE = {
   mode: 'block', // 'block' or 'allow'
-  patterns: [], // list of URL patterns
+  blockPatterns: [], // list of URL patterns when in block mode
+  allowPatterns: [], // list of URL patterns when in allow mode
   sessions: [], // [{days:[0-6], start:'HH:MM', end:'HH:MM', break:5}]
   immediate: false, // manual immediate block
   breakUntil: 0,
@@ -42,8 +43,16 @@ async function enforceBlocking() {
 }
 
 async function loadState() {
-  const data = await browser.storage.local.get(Object.keys(DEFAULT_STATE));
+  const data = await browser.storage.local.get([...Object.keys(DEFAULT_STATE), 'patterns']);
   state = Object.assign({}, DEFAULT_STATE, data);
+  // migrate old single pattern list if present
+  if (Array.isArray(data.patterns)) {
+    if (!data.blockPatterns && state.mode === 'block') {
+      state.blockPatterns = data.patterns;
+    } else if (!data.allowPatterns && state.mode === 'allow') {
+      state.allowPatterns = data.patterns;
+    }
+  }
   lastFocus = focusActive();
 
   if (lastFocus) {
@@ -132,6 +141,10 @@ function checkFocusChange() {
   lastFocus = active;
 }
 
+function activePatterns() {
+  return state.mode === 'block' ? state.blockPatterns : state.allowPatterns;
+}
+
 function isBlocked(url) {
   try {
     const scheme = new URL(url).protocol;
@@ -140,13 +153,14 @@ function isBlocked(url) {
     return false;
   }
   if (!focusActive()) return false;
-  const matched = state.patterns.some(p => patternMatches(p, url));
+  const matched = activePatterns().some(p => patternMatches(p, url));
   if (state.mode === 'block') return matched;
   return !matched;
 }
 
 browser.webNavigation.onCommitted.addListener(details => {
-  if (isBlocked(details.url)) {
+  // Only evaluate the top-level frame to avoid blocking embedded resources
+  if (details.frameId === 0 && isBlocked(details.url)) {
     const blockedUrl = browser.runtime.getURL('blocked.html') + '?url=' + encodeURIComponent(details.url);
     browser.tabs.update(details.tabId, {url: blockedUrl});
   }
@@ -165,10 +179,10 @@ browser.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 browser.runtime.onMessage.addListener((msg) => {
   if (msg.type === 'unblockUrl' && msg.url) {
     if (state.mode === 'allow') {
-      if (!state.patterns.includes(msg.url)) state.patterns.push(msg.url);
+      if (!state.allowPatterns.includes(msg.url)) state.allowPatterns.push(msg.url);
     } else {
-      const idx = state.patterns.indexOf(msg.url);
-      if (idx !== -1) state.patterns.splice(idx, 1);
+      const idx = state.blockPatterns.indexOf(msg.url);
+      if (idx !== -1) state.blockPatterns.splice(idx, 1);
     }
     return saveState();
   }
@@ -214,6 +228,7 @@ browser.storage.onChanged.addListener((changes, area) => {
     for (const key of Object.keys(changes)) {
       state[key] = changes[key].newValue;
     }
+    restoreTabs();
     enforceBlocking();
     checkFocusChange();
   }
