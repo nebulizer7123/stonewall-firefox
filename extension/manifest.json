@@ -10,10 +10,11 @@
     "webNavigation",
     "webRequest",
     "webRequestBlocking",
-    "alarms"
+    "alarms",
+    "idle"
   ],
   "background": {
-    "scripts": ["background.js"]
+    "scripts": ["background.js", "timeTracking.js"]
   },
   "icons": {
     "48": "brick.png",
