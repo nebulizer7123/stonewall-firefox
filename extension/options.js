@@ -10,6 +10,8 @@ const optQuickBtns = document.querySelectorAll('.optQuick');
 const patternsBody = document.querySelector('#patternsTable tbody');
 const sessionsBody = document.querySelector('#sessionsTable tbody');
 const patternsHeading = document.getElementById('patternsHeading');
+const usageBody = document.querySelector('#usageTable tbody');
+const usageChart = document.getElementById('usageChart');
 
 let state = {
   mode: 'block',
@@ -21,9 +23,13 @@ let state = {
   breakDuration: 5
 };
 
+let usage = { totals: {}, sessions: [] };
+
 async function load() {
-  const data = await browser.storage.local.get(Object.keys(state));
-  Object.assign(state, data);
+  const data = await browser.storage.local.get([...Object.keys(state), 'usage']);
+  const { usage: u, ...rest } = data;
+  Object.assign(state, rest);
+  if (u) usage = u;
   modeEl.value = state.mode;
   immediateEl.checked = state.immediate;
   breakDurationEl.value = state.breakDuration;
@@ -31,6 +37,8 @@ async function load() {
   updatePatternsHeading();
   renderPatterns();
   renderSessions();
+  renderUsage();
+  drawChart();
   updateBreakControls();
 }
 
@@ -163,6 +171,76 @@ function renderSessions() {
   });
 }
 
+function formatDuration(ms) {
+  const min = Math.floor(ms / 60000);
+  const h = Math.floor(min / 60).toString().padStart(2, '0');
+  const m = (min % 60).toString().padStart(2, '0');
+  return `${h}:${m}`;
+}
+
+function renderUsage() {
+  usageBody.innerHTML = '';
+  const entries = Object.entries(usage.totals);
+  entries.sort((a, b) => b[1].total - a[1].total);
+  entries.slice(0, 10).forEach(([domain, info]) => {
+    const tr = document.createElement('tr');
+    const tdDom = document.createElement('td');
+    tdDom.textContent = domain;
+    const tdTotal = document.createElement('td');
+    tdTotal.textContent = formatDuration(info.total);
+    const tdLast = document.createElement('td');
+    tdLast.textContent = new Date(info.last).toLocaleString();
+    const tdAct = document.createElement('td');
+    const btn = document.createElement('button');
+    btn.textContent = 'Remove';
+    btn.addEventListener('click', () => removeDomain(domain));
+    tdAct.appendChild(btn);
+    tr.appendChild(tdDom);
+    tr.appendChild(tdTotal);
+    tr.appendChild(tdLast);
+    tr.appendChild(tdAct);
+    usageBody.appendChild(tr);
+  });
+}
+
+function drawChart() {
+  if (!usageChart) return;
+  const ctx = usageChart.getContext('2d');
+  ctx.clearRect(0, 0, usageChart.width, usageChart.height);
+  const end = Date.now();
+  const start = end - 24 * 60 * 60 * 1000;
+  const hours = new Array(24).fill(0);
+  usage.sessions.forEach(s => {
+    if (s.end <= start) return;
+    const st = Math.max(start, s.start);
+    const en = Math.min(end, s.end);
+    let h = new Date(st).getHours();
+    while (h <= new Date(en).getHours()) {
+      const hourStart = new Date(new Date(st).setHours(h, 0, 0, 0)).getTime();
+      const hourEnd = hourStart + 3600000;
+      const overlap = Math.min(en, hourEnd) - Math.max(st, hourStart);
+      if (overlap > 0) hours[h] += overlap;
+      h++;
+    }
+  });
+  const max = Math.max(...hours) || 1;
+  const w = usageChart.width / 24;
+  hours.forEach((val, i) => {
+    const barH = (val / max) * usageChart.height;
+    ctx.fillStyle = '#5a9b8e';
+    ctx.fillRect(i * w + 1, usageChart.height - barH, w - 2, barH);
+  });
+}
+
+function removeDomain(domain) {
+  delete usage.totals[domain];
+  usage.sessions = usage.sessions.filter(s => s.domain !== domain);
+  browser.storage.local.set({ usage }).then(() => {
+    renderUsage();
+    drawChart();
+  });
+}
+
 modeEl.addEventListener('change', () => {
   state.mode = modeEl.value;
   updatePatternsHeading();
@@ -217,7 +295,11 @@ document.getElementById('addSession').addEventListener('click', () => {
 browser.storage.onChanged.addListener((changes, area) => {
   if (area === 'local') {
     for (const k of Object.keys(changes)) {
-      state[k] = changes[k].newValue;
+      if (k === 'usage') {
+        usage = changes[k].newValue;
+      } else {
+        state[k] = changes[k].newValue;
+      }
     }
     modeEl.value = state.mode;
     immediateEl.checked = state.immediate;
@@ -226,6 +308,8 @@ browser.storage.onChanged.addListener((changes, area) => {
     updatePatternsHeading();
     renderPatterns();
     renderSessions();
+    renderUsage();
+    drawChart();
     updateBreakControls();
   }
 });
