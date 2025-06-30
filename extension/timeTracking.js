@@ -62,7 +62,8 @@ async function handleActiveTab(tabId) {
 browser.tabs.onActivated.addListener(info => handleActiveTab(info.tabId));
 
 browser.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-  if (tab.active && changeInfo.url) {
+  if (!tab.active) return;
+  if (changeInfo.url || changeInfo.status === 'complete') {
     handleActiveTab(tabId);
   }
 });
