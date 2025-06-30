@@ -12,6 +12,10 @@ const sessionsBody = document.querySelector('#sessionsTable tbody');
 const patternsHeading = document.getElementById('patternsHeading');
 const usageBody = document.querySelector('#usageTable tbody');
 const usageChart = document.getElementById('usageChart');
+const sortTimeHead = document.getElementById('sortTime');
+const sortCountHead = document.getElementById('sortCount');
+
+let usageSort = 'time';
 
 let state = {
   mode: 'block',
@@ -181,7 +185,11 @@ function formatDuration(ms) {
 function renderUsage() {
   usageBody.innerHTML = '';
   const entries = Object.entries(usage.totals);
-  entries.sort((a, b) => b[1].total - a[1].total);
+  if (usageSort === 'count') {
+    entries.sort((a, b) => (b[1].count || 0) - (a[1].count || 0));
+  } else {
+    entries.sort((a, b) => b[1].total - a[1].total);
+  }
   entries.slice(0, 10).forEach(([domain, info]) => {
     const tr = document.createElement('tr');
     const tdDom = document.createElement('td');
@@ -190,6 +198,8 @@ function renderUsage() {
     tdTotal.textContent = formatDuration(info.total);
     const tdLast = document.createElement('td');
     tdLast.textContent = new Date(info.last).toLocaleString();
+    const tdCount = document.createElement('td');
+    tdCount.textContent = info.count || 0;
     const tdAct = document.createElement('td');
     const btn = document.createElement('button');
     btn.textContent = 'Remove';
@@ -198,6 +208,7 @@ function renderUsage() {
     tr.appendChild(tdDom);
     tr.appendChild(tdTotal);
     tr.appendChild(tdLast);
+    tr.appendChild(tdCount);
     tr.appendChild(tdAct);
     usageBody.appendChild(tr);
   });
@@ -345,6 +356,17 @@ document.getElementById('addSession').addEventListener('click', () => {
   save();
   renderSessions();
 });
+
+if (sortTimeHead && sortCountHead) {
+  sortTimeHead.addEventListener('click', () => {
+    usageSort = 'time';
+    renderUsage();
+  });
+  sortCountHead.addEventListener('click', () => {
+    usageSort = 'count';
+    renderUsage();
+  });
+}
 
 browser.storage.onChanged.addListener((changes, area) => {
   if (area === 'local') {
