@@ -7,6 +7,9 @@ let current = null; // {domain, start}
 async function loadUsageData() {
   const data = await browser.storage.local.get(USAGE_KEY);
   usageData = data[USAGE_KEY] || { totals: {}, sessions: [] };
+  for (const info of Object.values(usageData.totals)) {
+    if (!Object.prototype.hasOwnProperty.call(info, 'count')) info.count = 0;
+  }
 }
 
 function saveUsageData() {
@@ -16,7 +19,13 @@ function saveUsageData() {
 function startSession(domain) {
   if (current && current.domain === domain) return;
   stopSession();
-  current = { domain, start: Date.now() };
+  const now = Date.now();
+  let info = usageData.totals[domain];
+  if (!info) info = usageData.totals[domain] = { total: 0, last: 0, count: 0 };
+  if (!info.last || now - info.last >= 30000) {
+    info.count += 1;
+  }
+  current = { domain, start: now };
 }
 
 function stopSession() {
@@ -24,7 +33,7 @@ function stopSession() {
   const end = Date.now();
   const dur = end - current.start;
   let info = usageData.totals[current.domain];
-  if (!info) info = usageData.totals[current.domain] = { total: 0, last: 0 };
+  if (!info) info = usageData.totals[current.domain] = { total: 0, last: 0, count: 0 };
   info.total += dur;
   info.last = end;
   usageData.sessions.push({ domain: current.domain, start: current.start, end });
@@ -53,7 +62,8 @@ async function handleActiveTab(tabId) {
 browser.tabs.onActivated.addListener(info => handleActiveTab(info.tabId));
 
 browser.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-  if (tab.active && changeInfo.url) {
+  if (!tab.active) return;
+  if (changeInfo.url || changeInfo.status === 'complete') {
     handleActiveTab(tabId);
   }
 });

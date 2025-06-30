@@ -47,6 +47,10 @@ td, th {
   padding: 4px 8px;
 }
 
+th.sortable {
+  cursor: pointer;
+}
+
 input[type="text"],
 input[type="time"],
 select {
