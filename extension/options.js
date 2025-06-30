@@ -207,6 +207,12 @@ function drawChart() {
   if (!usageChart) return;
   const ctx = usageChart.getContext('2d');
   ctx.clearRect(0, 0, usageChart.width, usageChart.height);
+
+  const padding = 30;
+  const top = 10;
+  const chartW = usageChart.width - padding - 10;
+  const chartH = usageChart.height - padding - top;
+
   const end = Date.now();
   const start = end - 24 * 60 * 60 * 1000;
   const hours = new Array(24).fill(0);
@@ -223,13 +229,61 @@ function drawChart() {
       h++;
     }
   });
+
   const max = Math.max(...hours) || 1;
-  const w = usageChart.width / 24;
+  const barW = chartW / 24;
+
+  // axes
+  ctx.strokeStyle = '#333';
+  ctx.beginPath();
+  ctx.moveTo(padding, top);
+  ctx.lineTo(padding, top + chartH);
+  ctx.lineTo(padding + chartW, top + chartH);
+  ctx.stroke();
+
+  ctx.fillStyle = '#5a9b8e';
   hours.forEach((val, i) => {
-    const barH = (val / max) * usageChart.height;
-    ctx.fillStyle = '#5a9b8e';
-    ctx.fillRect(i * w + 1, usageChart.height - barH, w - 2, barH);
+    const barH = (val / max) * chartH;
+    ctx.fillRect(padding + i * barW + 1, top + chartH - barH, barW - 2, barH);
   });
+
+  // Y axis ticks and labels
+  ctx.fillStyle = '#000';
+  ctx.font = '10px sans-serif';
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'middle';
+  const steps = 4;
+  for (let i = 0; i <= steps; i++) {
+    const y = top + chartH - (i / steps) * chartH;
+    ctx.beginPath();
+    ctx.moveTo(padding - 5, y);
+    ctx.lineTo(padding, y);
+    ctx.stroke();
+    const label = formatDuration((max * i) / steps);
+    ctx.fillText(label, padding - 7, y);
+  }
+
+  // X axis ticks and labels
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  for (let i = 0; i < 24; i += 6) {
+    const x = padding + i * barW + barW / 2;
+    ctx.beginPath();
+    ctx.moveTo(x, top + chartH);
+    ctx.lineTo(x, top + chartH + 5);
+    ctx.stroke();
+    ctx.fillText(i.toString(), x, top + chartH + 7);
+  }
+
+  // axis titles
+  ctx.textAlign = 'center';
+  ctx.fillText('Time', padding + chartW / 2, usageChart.height - 2);
+  ctx.save();
+  ctx.translate(10, top + chartH / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.textAlign = 'center';
+  ctx.fillText('Time Spent (hh:mm)', 0, 0);
+  ctx.restore();
 }
 
 function removeDomain(domain) {
