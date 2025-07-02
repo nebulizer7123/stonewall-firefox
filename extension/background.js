@@ -166,6 +166,19 @@ browser.webNavigation.onCommitted.addListener(details => {
   }
 });
 
+// Intercept requests before they are made to avoid reload loops
+browser.webRequest.onBeforeRequest.addListener(
+  details => {
+    if (isBlocked(details.url)) {
+      const blockedUrl = browser.runtime.getURL('blocked.html') +
+        '?url=' + encodeURIComponent(details.url);
+      return { redirectUrl: blockedUrl };
+    }
+  },
+  { urls: ['<all_urls>'], types: ['main_frame'] },
+  ['blocking']
+);
+
 // Some sites update the URL without a full navigation (e.g. via the history
 // API). Listen for tab updates so we catch those changes as well as normal
 // loads.
