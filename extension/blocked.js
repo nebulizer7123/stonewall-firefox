@@ -9,10 +9,16 @@ const timerEl = document.getElementById('breakTimer');
 const progress = document.getElementById('progressBar');
 const durInput = document.getElementById('durationInput');
 const quickBtns = document.querySelectorAll('.quickBreak');
+const countdown = document.getElementById('countdownOverlay');
+const delayTimer = document.getElementById('delayTimer');
+const cancelDelay = document.getElementById('cancelDelay');
+const continueDelay = document.getElementById('continueDelay');
 
 let breakUntil = 0;
 let breakDuration = 0; // ms
 let intervalId = null;
+let delayInterval = null;
+let pendingDuration = 0;
 
 msgEl.textContent = `The following URL is blocked: ${url}`;
 
@@ -62,9 +68,43 @@ async function stopBreak() {
   updateTimer();
 }
 
-btn.addEventListener('click', () => startBreak());
+function hideDelay() {
+  if (delayInterval) {
+    clearInterval(delayInterval);
+    delayInterval = null;
+  }
+  countdown.style.display = 'none';
+}
+
+function showDelay(duration) {
+  hideDelay();
+  pendingDuration = duration || parseInt(durInput.value, 10) || 5;
+  let remaining = 15;
+  delayTimer.textContent = `${remaining} seconds remaining`;
+  countdown.style.display = 'block';
+  continueDelay.disabled = true;
+  delayInterval = setInterval(() => {
+    remaining -= 1;
+    if (remaining > 0) {
+      delayTimer.textContent = `${remaining} seconds remaining`;
+    } else {
+      clearInterval(delayInterval);
+      delayInterval = null;
+      delayTimer.textContent = 'Ready';
+      continueDelay.disabled = false;
+    }
+  }, 1000);
+}
+
+cancelDelay.addEventListener('click', () => hideDelay());
+continueDelay.addEventListener('click', () => {
+  hideDelay();
+  startBreak(pendingDuration);
+});
+
+btn.addEventListener('click', () => showDelay());
 quickBtns.forEach(b => {
-  b.addEventListener('click', () => startBreak(parseInt(b.dataset.duration,10)));
+  b.addEventListener('click', () => showDelay(parseInt(b.dataset.duration,10)));
 });
 stopBtn.addEventListener('click', stopBreak);
 

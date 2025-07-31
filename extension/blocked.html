@@ -18,6 +18,14 @@
   <button id="stopBreakBtn" style="display:none;">Stop Break</button>
   <div id="progressContainer"><div id="progressBar"></div></div>
   <div id="breakTimer"></div>
+  <div id="countdownOverlay" style="display:none;">
+    <div id="delayMessage" aria-live="polite">Please wait 15 seconds…</div>
+    <div id="delayTimer" aria-live="polite">15 seconds remaining</div>
+    <div class="buttonRow">
+      <button id="cancelDelay">Cancel</button>
+      <button id="continueDelay" disabled>Continue</button>
+    </div>
+  </div>
   <script src="blocked.js"></script>
 </body>
 </html>
