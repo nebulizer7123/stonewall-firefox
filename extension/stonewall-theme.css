@@ -116,3 +116,23 @@ body.blocked {
   transition: width 1s linear;
 }
 
+/* Countdown overlay for break delay */
+#countdownOverlay {
+  margin-top: 16px;
+}
+
+#delayTimer {
+  font-size: 24px;
+  margin: 8px 0;
+}
+
+.buttonRow {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.buttonRow button {
+  flex: 1;
+}
+
