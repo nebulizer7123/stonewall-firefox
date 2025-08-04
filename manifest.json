@@ -13,23 +13,22 @@
     "alarms"
   ],
   "background": {
-    "scripts": ["background.js"]
+    "scripts": ["background/background.js"]
   },
   "icons": {
-    "1200": "brick.png",
-    "1200": "brick.png"
+    "1200": "icons/brick.png"
   },
   "options_ui": {
-    "page": "options.html",
+    "page": "pages/options/options.html",
     "open_in_tab": true
   },
   "browser_action": {
-    "default_icon": "brick.png",
-    "default_popup": "popup.html"
+    "default_icon": "icons/brick.png",
+    "default_popup": "pages/popup/popup.html"
   },
   "web_accessible_resources": [
-    "blocked.html",
-    "stonewall-theme.css"
+    "pages/blocked/blocked.html",
+    "styles/stonewall-theme.css"
   ],
   "browser_specific_settings": {
     "gecko": {
