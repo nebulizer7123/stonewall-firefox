@@ -4,7 +4,7 @@ Stonewall is a minimal browser extension for blocking distracting websites. It s
 
 ## Installing
 1. Open Firefox and navigate to `about:debugging#/runtime/this-firefox`.
-2. Click **Load Temporary Add-on** and select `manifest.json` in the `extension` folder.
+2. Click **Load Temporary Add-on** and select `manifest.json` in the repository root.
 
 ## Usage
 Open the extension options page to configure blocking rules.
