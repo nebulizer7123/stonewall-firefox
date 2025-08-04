@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "Stonewall",
-  "version": "20250731",
+  "version": "20250804",
   "description": "Block distracting websites, track time, and schedule blocks.",
   "permissions": [
     "storage",
@@ -32,7 +32,7 @@
   ],
   "browser_specific_settings": {
     "gecko": {
-      "id": "stonewall@example.com"
+      "id": "cghomilbbfdmgfidkdinillpmdpdjgmm@chrome-store-foxified-2016283187"
     }
   }
 }
