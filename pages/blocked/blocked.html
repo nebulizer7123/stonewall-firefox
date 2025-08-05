@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <title>URL Blocked</title>
-  <link rel="stylesheet" href="stonewall-theme.css">
+  <link rel="stylesheet" href="../../styles/stonewall-theme.css">
 </head>
 <body class="blocked">
   <p id="msg"></p>
@@ -18,6 +18,14 @@
   <button id="stopBreakBtn" style="display:none;">Stop Break</button>
   <div id="progressContainer"><div id="progressBar"></div></div>
   <div id="breakTimer"></div>
+  <div id="countdownOverlay" style="display:none;">
+    <div id="delayMessage" aria-live="polite">Please wait 15 seconds…</div>
+    <div id="delayTimer" aria-live="polite">15 seconds remaining</div>
+    <div class="buttonRow">
+      <button id="cancelDelay">Cancel</button>
+      <button id="continueDelay" disabled>Continue</button>
+    </div>
+  </div>
   <script src="blocked.js"></script>
 </body>
 </html>

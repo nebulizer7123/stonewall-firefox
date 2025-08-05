@@ -17,7 +17,7 @@ let lastFocus = false;
 
 
 async function restoreTabs() {
-  const blockedPage = browser.runtime.getURL('blocked.html');
+  const blockedPage = browser.runtime.getURL('pages/blocked/blocked.html');
   const tabs = await browser.tabs.query({});
   for (const tab of tabs) {
     if (tab.url && tab.url.startsWith(blockedPage)) {
@@ -35,7 +35,7 @@ async function enforceBlocking() {
   const tabs = await browser.tabs.query({});
   for (const tab of tabs) {
     if (tab.url && isBlocked(tab.url)) {
-      const blockedUrl = browser.runtime.getURL('blocked.html') +
+      const blockedUrl = browser.runtime.getURL('pages/blocked/blocked.html') +
         '?url=' + encodeURIComponent(tab.url);
       browser.tabs.update(tab.id, { url: blockedUrl });
     }
@@ -161,7 +161,7 @@ function isBlocked(url) {
 browser.webNavigation.onCommitted.addListener(details => {
   // Only evaluate the top-level frame to avoid blocking embedded resources
   if (details.frameId === 0 && isBlocked(details.url)) {
-    const blockedUrl = browser.runtime.getURL('blocked.html') + '?url=' + encodeURIComponent(details.url);
+    const blockedUrl = browser.runtime.getURL('pages/blocked/blocked.html') + '?url=' + encodeURIComponent(details.url);
     browser.tabs.update(details.tabId, {url: blockedUrl});
   }
 });
@@ -171,7 +171,7 @@ browser.webNavigation.onCommitted.addListener(details => {
 // loads.
 browser.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (changeInfo.url && isBlocked(changeInfo.url)) {
-    const blockedUrl = browser.runtime.getURL('blocked.html') + '?url=' + encodeURIComponent(changeInfo.url);
+    const blockedUrl = browser.runtime.getURL('pages/blocked/blocked.html') + '?url=' + encodeURIComponent(changeInfo.url);
     browser.tabs.update(tabId, { url: blockedUrl });
   }
 });
