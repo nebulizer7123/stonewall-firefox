@@ -8,6 +8,8 @@ const optStart = document.getElementById('optStart');
 const optStop = document.getElementById('optStop');
 const optQuickBtns = document.querySelectorAll('.optQuick');
 const patternsBody = document.querySelector('#patternsTable tbody');
+const exceptionsSection = document.getElementById('exceptionsSection');
+const exceptionsBody = document.querySelector('#exceptionsTable tbody');
 const sessionsBody = document.querySelector('#sessionsTable tbody');
 const patternsHeading = document.getElementById('patternsHeading');
 
@@ -15,6 +17,7 @@ let state = {
   mode: 'block',
   blockPatterns: [],
   allowPatterns: [],
+  exceptionPatterns: [],
   sessions: [],
   immediate: false,
   breakUntil: 0,
@@ -30,8 +33,10 @@ async function load() {
   optBreakInput.value = state.breakDuration;
   updatePatternsHeading();
   renderPatterns();
+  renderExceptions();
   renderSessions();
   updateBreakControls();
+  updateExceptionsVisibility();
 }
 
 function save() {
@@ -58,6 +63,12 @@ function updatePatternsHeading() {
 
 function getActiveList() {
   return state.mode === 'block' ? state.blockPatterns : state.allowPatterns;
+}
+
+function updateExceptionsVisibility() {
+  if (exceptionsSection) {
+    exceptionsSection.style.display = state.mode === 'block' ? 'block' : 'none';
+  }
 }
 
 function renderPatterns() {
@@ -91,6 +102,39 @@ function renderPatterns() {
     tr.appendChild(tdIn);
     tr.appendChild(tdAct);
     patternsBody.appendChild(tr);
+  });
+}
+
+function renderExceptions() {
+  exceptionsBody.innerHTML = '';
+  state.exceptionPatterns.forEach((p, i) => {
+    const tr = document.createElement('tr');
+    const tdIn = document.createElement('td');
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.value = p;
+    input.addEventListener('change', () => {
+      if (input.value.trim()) {
+        state.exceptionPatterns[i] = input.value.trim();
+      } else {
+        state.exceptionPatterns.splice(i, 1);
+      }
+      save();
+      renderExceptions();
+    });
+    tdIn.appendChild(input);
+    const tdAct = document.createElement('td');
+    const btn = document.createElement('button');
+    btn.textContent = 'Remove';
+    btn.addEventListener('click', () => {
+      state.exceptionPatterns.splice(i, 1);
+      save();
+      renderExceptions();
+    });
+    tdAct.appendChild(btn);
+    tr.appendChild(tdIn);
+    tr.appendChild(tdAct);
+    exceptionsBody.appendChild(tr);
   });
 }
 
@@ -168,6 +212,8 @@ modeEl.addEventListener('change', () => {
   updatePatternsHeading();
   save();
   renderPatterns();
+  renderExceptions();
+  updateExceptionsVisibility();
 });
 
 immediateEl.addEventListener('change', () => {
@@ -208,6 +254,16 @@ document.getElementById('addPatternForm').addEventListener('submit', (e) => {
   renderPatterns();
 });
 
+document.getElementById('addExceptionForm').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const val = document.getElementById('newException').value.trim();
+  if (!val) return;
+  state.exceptionPatterns.push(val);
+  document.getElementById('newException').value = '';
+  save();
+  renderExceptions();
+});
+
 document.getElementById('addSession').addEventListener('click', () => {
   state.sessions.push({days: [1,2,3,4,5], start: '09:00', end: '17:00', break: 5});
   save();
@@ -225,8 +281,10 @@ browser.storage.onChanged.addListener((changes, area) => {
     optBreakInput.value = state.breakDuration;
     updatePatternsHeading();
     renderPatterns();
+    renderExceptions();
     renderSessions();
     updateBreakControls();
+    updateExceptionsVisibility();
   }
 });
 
