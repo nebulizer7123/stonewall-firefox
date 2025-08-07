@@ -37,6 +37,19 @@
     <button type="submit">Add</button>
   </form>
 
+  <div id="exceptionsSection" style="display:none;">
+    <h2>Block Exceptions</h2>
+    <table id="exceptionsTable">
+      <thead><tr><th>URL Pattern</th><th></th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <form id="addExceptionForm">
+      <input id="newException" type="text" placeholder="reddit.com/r/programming" required>
+      <button type="submit">Add</button>
+    </form>
+    <p class="patternHelp">Patterns match a domain and optional path. Example: reddit.com/r/programming</p>
+  </div>
+
   <h2>Focus Sessions</h2>
   <table id="sessionsTable">
     <thead>

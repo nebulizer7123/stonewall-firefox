@@ -5,6 +5,7 @@ const DEFAULT_STATE = {
   mode: 'block', // 'block' or 'allow'
   blockPatterns: [], // list of URL patterns when in block mode
   allowPatterns: [], // list of URL patterns when in allow mode
+  exceptionPatterns: [], // list of exception patterns within blocked URLs
   sessions: [], // [{days:[0-6], start:'HH:MM', end:'HH:MM', break:5}]
   immediate: false, // manual immediate block
   breakUntil: 0,
@@ -141,10 +142,6 @@ function checkFocusChange() {
   lastFocus = active;
 }
 
-function activePatterns() {
-  return state.mode === 'block' ? state.blockPatterns : state.allowPatterns;
-}
-
 function isBlocked(url) {
   try {
     const scheme = new URL(url).protocol;
@@ -153,8 +150,13 @@ function isBlocked(url) {
     return false;
   }
   if (!focusActive()) return false;
-  const matched = activePatterns().some(p => patternMatches(p, url));
-  if (state.mode === 'block') return matched;
+  if (state.mode === 'block') {
+    const matched = state.blockPatterns.some(p => patternMatches(p, url));
+    if (!matched) return false;
+    const exceptionMatched = state.exceptionPatterns.some(p => patternMatches(p, url));
+    return !exceptionMatched;
+  }
+  const matched = state.allowPatterns.some(p => patternMatches(p, url));
   return !matched;
 }
 
