@@ -17,7 +17,7 @@ let state = {
   mode: 'block',
   blockPatterns: [],
   allowPatterns: [],
-  exceptionPatterns: [],
+  exceptionPatterns: ['reddit.com/r/*/comments/'],
   sessions: [],
   immediate: false,
   breakUntil: 0,

@@ -14,7 +14,7 @@ let state = {
   immediate: false,
   breakUntil: 0,
   mode: 'block',
-  exceptionPatterns: []
+  exceptionPatterns: ['reddit.com/r/*/comments/']
 };
 
 let currentUrl = '';

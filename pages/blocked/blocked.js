@@ -22,7 +22,7 @@ let intervalId = null;
 let delayInterval = null;
 let pendingDuration = 0;
 let mode = 'block';
-let exceptionPatterns = [];
+let exceptionPatterns = ['reddit.com/r/*/comments/'];
 
 msgEl.textContent = `The following URL is blocked: ${url}`;
 
