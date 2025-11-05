@@ -3,9 +3,9 @@
 // Storage keys
 const DEFAULT_STATE = {
   mode: 'block', // 'block' or 'allow'
-  blockPatterns: [], // list of URL patterns when in block mode
+  blockPatterns: ['reddit.com'], // list of URL patterns when in block mode
   allowPatterns: [], // list of URL patterns when in allow mode
-  exceptionPatterns: [], // list of exception patterns within blocked URLs
+  exceptionPatterns: ['reddit.com/r/*/comments/'], // list of exception patterns within blocked URLs
   sessions: [], // [{days:[0-6], start:'HH:MM', end:'HH:MM', break:5}]
   immediate: false, // manual immediate block
   breakUntil: 0,
@@ -68,18 +68,38 @@ function saveState() {
   return browser.storage.local.set(state);
 }
 
+function escapeRegex(str) {
+  return str.replace(/[|\\{}()\[\]^$+*?.]/g, '\$&');
+}
+
+function wildcardRegex(pattern, end = false, flags = '') {
+  const escaped = pattern
+    .split('*')
+    .map(escapeRegex)
+    .join('.*');
+  return new RegExp('^' + escaped + (end ? '$' : ''), flags);
+}
+
 function patternMatches(pattern, url) {
   try {
     const u = new URL(url);
     if (pattern.includes('://')) {
-      return url.startsWith(pattern);
+      return wildcardRegex(pattern).test(url);
     }
     const idx = pattern.indexOf('/');
     const domain = idx === -1 ? pattern : pattern.slice(0, idx);
     const path = idx === -1 ? '' : pattern.slice(idx);
-    if (u.hostname === domain || u.hostname.endsWith('.' + domain)) {
-      return u.pathname.startsWith(path);
+
+    let domainMatched = false;
+    if (domain.includes('*')) {
+      domainMatched = wildcardRegex(domain, true, 'i').test(u.hostname);
+    } else {
+      domainMatched = u.hostname === domain || u.hostname.endsWith('.' + domain);
     }
+    if (!domainMatched) return false;
+
+    if (!path) return true;
+    return wildcardRegex(path).test(u.pathname);
   } catch (e) {
     // ignore
   }

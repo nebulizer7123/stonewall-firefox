@@ -13,6 +13,7 @@ Open the extension options page to configure blocking rules.
 - **Immediate Block** – manually enable or disable blocking regardless of schedules.
 - **Patterns** – list of full URLs or domains to block or allow.
 - **Block Exceptions** – allowed URLs or paths within blocked sites (only in Block mode).
+  Wildcards (`*`) are supported in patterns to match variable segments, e.g. `reddit.com/r/*/comments/`.
 - **Focus Sessions** – set days of the week, start and end times, and break lengths. When a session ends the break timer unblocks pages for the specified minutes.
 
 Use the toolbar popup to quickly toggle immediate blocking or open the options page.

@@ -15,9 +15,9 @@ const patternsHeading = document.getElementById('patternsHeading');
 
 let state = {
   mode: 'block',
-  blockPatterns: [],
+  blockPatterns: ['reddit.com'],
   allowPatterns: [],
-  exceptionPatterns: [],
+  exceptionPatterns: ['reddit.com/r/*/comments/'],
   sessions: [],
   immediate: false,
   breakUntil: 0,

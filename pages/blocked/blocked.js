@@ -13,12 +13,16 @@ const countdown = document.getElementById('countdownOverlay');
 const delayTimer = document.getElementById('delayTimer');
 const cancelDelay = document.getElementById('cancelDelay');
 const continueDelay = document.getElementById('continueDelay');
+const addExcBtn = document.getElementById('addExceptionBtn');
+const excMsg = document.getElementById('blockedExceptionMsg');
 
 let breakUntil = 0;
 let breakDuration = 0; // ms
 let intervalId = null;
 let delayInterval = null;
 let pendingDuration = 0;
+let mode = 'block';
+let exceptionPatterns = ['reddit.com/r/*/comments/'];
 
 msgEl.textContent = `The following URL is blocked: ${url}`;
 
@@ -107,12 +111,56 @@ quickBtns.forEach(b => {
   b.addEventListener('click', () => showDelay(parseInt(b.dataset.duration,10)));
 });
 stopBtn.addEventListener('click', stopBreak);
+addExcBtn.addEventListener('click', async () => {
+  const pattern = normalizeUrl(url);
+  const data = await browser.storage.local.get(['exceptionPatterns']);
+  const list = data.exceptionPatterns || [];
+  if (!list.includes(pattern)) {
+    list.push(pattern);
+    await browser.storage.local.set({exceptionPatterns: list});
+    excMsg.textContent = 'URL added to exceptions';
+    setTimeout(() => { excMsg.textContent = ''; }, 2000);
+    exceptionPatterns = list;
+    updateExceptionButton();
+    setTimeout(() => { location.href = url; }, 500);
+  }
+});
+
+function normalizeUrl(u) {
+  try {
+    const x = new URL(u);
+    return x.origin + x.pathname;
+  } catch (e) {
+    return u;
+  }
+}
+
+function updateExceptionButton() {
+  if (!addExcBtn) return;
+  if (mode !== 'block' || !url) {
+    addExcBtn.style.display = 'none';
+    return;
+  }
+  addExcBtn.style.display = 'inline-block';
+  const pattern = normalizeUrl(url);
+  const exists = exceptionPatterns.includes(pattern);
+  if (exists) {
+    addExcBtn.textContent = 'Already in Exception List';
+    addExcBtn.disabled = true;
+  } else {
+    addExcBtn.textContent = 'Add to Exception List';
+    addExcBtn.disabled = false;
+  }
+}
 
 (async function init() {
-  const data = await browser.storage.local.get(['breakUntil', 'breakDuration','resumeUrl']);
+  const data = await browser.storage.local.get(['breakUntil', 'breakDuration','resumeUrl','mode','exceptionPatterns']);
   breakUntil = data.breakUntil || 0;
   breakDuration = (data.breakDuration || 5) * 60000;
   durInput.value = data.breakDuration || 5;
+  mode = data.mode || 'block';
+  exceptionPatterns = data.exceptionPatterns || [];
+  updateExceptionButton();
   if (breakUntil > Date.now()) {
     btn.disabled = true;
     durInput.disabled = true;
@@ -122,3 +170,11 @@ stopBtn.addEventListener('click', stopBreak);
     intervalId = setInterval(updateTimer, 1000);
   }
 })();
+
+browser.storage.onChanged.addListener((changes, area) => {
+  if (area === 'local') {
+    if (changes.mode) mode = changes.mode.newValue;
+    if (changes.exceptionPatterns) exceptionPatterns = changes.exceptionPatterns.newValue;
+    updateExceptionButton();
+  }
+});
