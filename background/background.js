@@ -3,7 +3,7 @@
 // Storage keys
 const DEFAULT_STATE = {
   mode: 'block', // 'block' or 'allow'
-  blockPatterns: [], // list of URL patterns when in block mode
+  blockPatterns: ['reddit.com'], // list of URL patterns when in block mode
   allowPatterns: [], // list of URL patterns when in allow mode
   exceptionPatterns: ['reddit.com/r/*/comments/'], // list of exception patterns within blocked URLs
   sessions: [], // [{days:[0-6], start:'HH:MM', end:'HH:MM', break:5}]
