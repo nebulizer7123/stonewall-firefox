@@ -136,3 +136,26 @@ body.blocked {
   flex: 1;
 }
 
+body.blocked.noBreaks {
+  background-color: #f2f2f2;
+  color: #6e6e6e;
+  filter: grayscale(100%);
+}
+
+body.blocked.noBreaks #progressContainer {
+  background-color: #e0e0e0;
+}
+
+body.blocked.noBreaks #progressBar {
+  background: linear-gradient(to right, #c7c7c7, #a3a3a3);
+}
+
+body.blocked.noBreaks button {
+  background-color: #b8b8b8;
+  color: #f6f6f6;
+}
+
+body.blocked.noBreaks button:hover {
+  background-color: #aaaaaa;
+}
+

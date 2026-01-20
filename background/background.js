@@ -10,7 +10,8 @@ const DEFAULT_STATE = {
   immediate: false, // manual immediate block
   breakUntil: 0,
   breakDuration: 5,
-  resumeUrl: ''
+  resumeUrl: '',
+  sessionBreakUsage: {}
 };
 
 let state = Object.assign({}, DEFAULT_STATE);
@@ -54,12 +55,17 @@ async function loadState() {
       state.allowPatterns = data.patterns;
     }
   }
+  const dirty = ensureSessionConsistency();
   lastFocus = focusActive();
 
   if (lastFocus) {
     enforceBlocking();
   } else {
     restoreTabs();
+  }
+
+  if (dirty) {
+    await saveState();
   }
 
 }
@@ -147,7 +153,7 @@ function checkBreaks() {
 function focusActive() {
   if (state.breakUntil && Date.now() < state.breakUntil) return false;
   if (state.immediate) return true;
-  return state.sessions.some(withinSession);
+  return !!getActiveSession();
 }
 
 function checkFocusChange() {
@@ -211,6 +217,20 @@ browser.runtime.onMessage.addListener((msg) => {
   if (msg.type === 'start-break') {
     const dur = (msg.duration || state.breakDuration) * 60000;
     if (!state.breakUntil || Date.now() >= state.breakUntil) {
+      const activeSession = getActiveSession();
+      if (activeSession) {
+        const allowed = typeof activeSession.breaksAllowed === 'number'
+          ? Math.max(0, Math.min(3, activeSession.breaksAllowed))
+          : 0;
+        if (allowed === 0) {
+          return Promise.reject({ code: 'break-limit' });
+        }
+        const usage = getSessionUsage(activeSession);
+        if (usage.used >= allowed) {
+          return Promise.reject({ code: 'break-limit' });
+        }
+        usage.used += 1;
+      }
       state.breakUntil = Date.now() + dur;
       state.immediate = false;
       if (msg.url) state.resumeUrl = msg.url;
@@ -249,6 +269,11 @@ browser.storage.onChanged.addListener((changes, area) => {
   if (area === 'local') {
     for (const key of Object.keys(changes)) {
       state[key] = changes[key].newValue;
+      if (key === 'sessions') {
+        if (ensureSessionConsistency()) {
+          saveState();
+        }
+      }
     }
     restoreTabs();
     enforceBlocking();
@@ -258,3 +283,66 @@ browser.storage.onChanged.addListener((changes, area) => {
 
 loadState();
 setInterval(checkBreaks, 60000);
+
+function generateSessionId() {
+  return 'ses-' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+}
+
+function ensureSessionDefaults(session) {
+  let modified = false;
+  if (!session.id) {
+    session.id = generateSessionId();
+    modified = true;
+  }
+  if (typeof session.breaksAllowed !== 'number') {
+    session.breaksAllowed = 0;
+    modified = true;
+  } else {
+    const normalized = Math.max(0, Math.min(3, Math.round(session.breaksAllowed)));
+    if (normalized !== session.breaksAllowed) {
+      session.breaksAllowed = normalized;
+      modified = true;
+    }
+  }
+  return modified;
+}
+
+function ensureSessionConsistency() {
+  if (!state.sessions) state.sessions = [];
+  if (!state.sessionBreakUsage || typeof state.sessionBreakUsage !== 'object') {
+    state.sessionBreakUsage = {};
+  }
+  let changed = false;
+  state.sessions.forEach((session) => {
+    if (ensureSessionDefaults(session)) changed = true;
+  });
+  const validIds = new Set(state.sessions.map(s => s.id));
+  for (const id of Object.keys(state.sessionBreakUsage)) {
+    if (!validIds.has(id)) {
+      delete state.sessionBreakUsage[id];
+      changed = true;
+    }
+  }
+  return changed;
+}
+
+function getActiveSession() {
+  if (state.breakUntil && Date.now() < state.breakUntil) return null;
+  return state.sessions.find(withinSession) || null;
+}
+
+function getSessionUsage(session) {
+  const key = dateKey();
+  const existing = state.sessionBreakUsage[session.id];
+  if (!existing || existing.key !== key) {
+    state.sessionBreakUsage[session.id] = { key, used: 0 };
+  }
+  return state.sessionBreakUsage[session.id];
+}
+
+function dateKey() {
+  const now = new Date();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${now.getFullYear()}-${month}-${day}`;
+}

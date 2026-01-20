@@ -9,6 +9,7 @@ const stopBtn = document.getElementById('popupStop');
 const quickBtns = document.querySelectorAll('.popupQuick');
 const exceptionBtn = document.getElementById('addException');
 const exceptionMsg = document.getElementById('exceptionMsg');
+const breakMsg = document.getElementById('popupBreakMsg');
 
 let state = {
   immediate: false,
@@ -71,8 +72,19 @@ toggleBtn.addEventListener('click', () => {
 });
 
 async function startBreak(duration) {
+  setBreakMsg('');
   const dur = duration || parseInt(durInput.value,10) || 5;
-  const until = await browser.runtime.sendMessage({type:'start-break', duration:dur});
+  let until;
+  try {
+    until = await browser.runtime.sendMessage({type:'start-break', duration:dur});
+  } catch (err) {
+    if (err && (err.code === 'break-limit' || err.message === 'break-limit')) {
+      setBreakMsg('No breaks remaining for this focus session.');
+    } else {
+      setBreakMsg('Unable to start break. Please try again.');
+    }
+    return;
+  }
   state.breakUntil = until;
   update();
 }
@@ -81,6 +93,7 @@ async function stopBreak() {
   await browser.runtime.sendMessage({type:'stop-break'});
   state.breakUntil = 0;
   update();
+  setBreakMsg('');
 }
 
 startBtn.addEventListener('click', () => startBreak());
@@ -117,6 +130,11 @@ function updateExceptionButton() {
     exceptionBtn.textContent = 'Add to Exception List';
     exceptionBtn.disabled = false;
   }
+}
+
+function setBreakMsg(message) {
+  if (!breakMsg) return;
+  breakMsg.textContent = message || '';
 }
 
 exceptionBtn.addEventListener('click', async () => {

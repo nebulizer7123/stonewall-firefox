@@ -24,9 +24,39 @@ let state = {
   breakDuration: 5
 };
 
+function generateSessionId() {
+  return 'ses-' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+}
+
+function normalizeSessions() {
+  if (!Array.isArray(state.sessions)) {
+    state.sessions = [];
+    return true;
+  }
+  let changed = false;
+  state.sessions.forEach((session) => {
+    if (!session.id) {
+      session.id = generateSessionId();
+      changed = true;
+    }
+    if (typeof session.breaksAllowed !== 'number') {
+      session.breaksAllowed = 0;
+      changed = true;
+    } else {
+      const normalized = Math.max(0, Math.min(3, Math.round(session.breaksAllowed)));
+      if (normalized !== session.breaksAllowed) {
+        session.breaksAllowed = normalized;
+        changed = true;
+      }
+    }
+  });
+  return changed;
+}
+
 async function load() {
   const data = await browser.storage.local.get(Object.keys(state));
   Object.assign(state, data);
+  const needsSave = normalizeSessions();
   modeEl.value = state.mode;
   immediateEl.checked = state.immediate;
   breakDurationEl.value = state.breakDuration;
@@ -37,6 +67,9 @@ async function load() {
   renderSessions();
   updateBreakControls();
   updateExceptionsVisibility();
+  if (needsSave) {
+    save();
+  }
 }
 
 function save() {
@@ -179,6 +212,26 @@ function renderSessions() {
       save();
     });
     tdEnd.appendChild(end);
+    const tdAllowed = document.createElement('td');
+    const allowed = document.createElement('select');
+    [0, 1, 2, 3].forEach((count) => {
+      const opt = document.createElement('option');
+      opt.value = String(count);
+      if (count === 0) {
+        opt.textContent = 'No breaks';
+      } else if (count === 1) {
+        opt.textContent = '1 break';
+      } else {
+        opt.textContent = count + ' breaks';
+      }
+      allowed.appendChild(opt);
+    });
+    allowed.value = String(typeof s.breaksAllowed === 'number' ? s.breaksAllowed : 0);
+    allowed.addEventListener('change', () => {
+      s.breaksAllowed = parseInt(allowed.value, 10);
+      save();
+    });
+    tdAllowed.appendChild(allowed);
     const tdBreak = document.createElement('td');
     const br = document.createElement('input');
     br.type = 'number';
@@ -201,6 +254,7 @@ function renderSessions() {
     tr.appendChild(tdDays);
     tr.appendChild(tdStart);
     tr.appendChild(tdEnd);
+    tr.appendChild(tdAllowed);
     tr.appendChild(tdBreak);
     tr.appendChild(tdAct);
     sessionsBody.appendChild(tr);
@@ -265,7 +319,14 @@ document.getElementById('addExceptionForm').addEventListener('submit', (e) => {
 });
 
 document.getElementById('addSession').addEventListener('click', () => {
-  state.sessions.push({days: [1,2,3,4,5], start: '09:00', end: '17:00', break: 5});
+  state.sessions.push({
+    id: generateSessionId(),
+    days: [1,2,3,4,5],
+    start: '09:00',
+    end: '17:00',
+    break: 5,
+    breaksAllowed: 0
+  });
   save();
   renderSessions();
 });
@@ -279,12 +340,16 @@ browser.storage.onChanged.addListener((changes, area) => {
     immediateEl.checked = state.immediate;
     breakDurationEl.value = state.breakDuration;
     optBreakInput.value = state.breakDuration;
+    const normalized = normalizeSessions();
     updatePatternsHeading();
     renderPatterns();
     renderExceptions();
     renderSessions();
     updateBreakControls();
     updateExceptionsVisibility();
+    if (normalized) {
+      save();
+    }
   }
 });
 
