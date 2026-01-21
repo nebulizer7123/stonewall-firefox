@@ -6,7 +6,6 @@ const optionsLink = document.getElementById('openOptions');
 const durInput = document.getElementById('popupDuration');
 const startBtn = document.getElementById('popupStart');
 const stopBtn = document.getElementById('popupStop');
-const quickBtns = document.querySelectorAll('.popupQuick');
 const exceptionBtn = document.getElementById('addException');
 const exceptionMsg = document.getElementById('exceptionMsg');
 const breakMsg = document.getElementById('popupBreakMsg');
@@ -38,7 +37,6 @@ function update() {
     toggleBtn.disabled = true;
     startBtn.disabled = true;
     durInput.disabled = true;
-    quickBtns.forEach(b => b.disabled = true);
     stopBtn.style.display = 'inline-block';
   } else if (state.immediate) {
     stateEl.textContent = 'Blocking';
@@ -46,7 +44,6 @@ function update() {
     toggleBtn.disabled = false;
     startBtn.disabled = false;
     durInput.disabled = false;
-    quickBtns.forEach(b => b.disabled = false);
     stopBtn.style.display = 'none';
   } else {
     stateEl.textContent = 'Idle';
@@ -54,7 +51,6 @@ function update() {
     toggleBtn.disabled = false;
     startBtn.disabled = false;
     durInput.disabled = false;
-    quickBtns.forEach(b => b.disabled = false);
     stopBtn.style.display = 'none';
   }
 }
@@ -97,7 +93,6 @@ async function stopBreak() {
 }
 
 startBtn.addEventListener('click', () => startBreak());
-quickBtns.forEach(b => b.addEventListener('click', () => startBreak(parseInt(b.dataset.duration,10))));
 stopBtn.addEventListener('click', stopBreak);
 
 optionsLink.addEventListener('click', (e) => {

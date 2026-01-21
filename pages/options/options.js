@@ -6,7 +6,6 @@ const breakDurationEl = document.getElementById('breakDuration');
 const optBreakInput = document.getElementById('optBreakInput');
 const optStart = document.getElementById('optStart');
 const optStop = document.getElementById('optStop');
-const optQuickBtns = document.querySelectorAll('.optQuick');
 const patternsBody = document.querySelector('#patternsTable tbody');
 const exceptionsSection = document.getElementById('exceptionsSection');
 const exceptionsBody = document.querySelector('#exceptionsTable tbody');
@@ -79,12 +78,10 @@ function save() {
 function updateBreakControls() {
   if (state.breakUntil && Date.now() < state.breakUntil) {
     optStart.disabled = true;
-    optQuickBtns.forEach(b => b.disabled = true);
     optBreakInput.disabled = true;
     optStop.style.display = 'inline-block';
   } else {
     optStart.disabled = false;
-    optQuickBtns.forEach(b => b.disabled = false);
     optBreakInput.disabled = false;
     optStop.style.display = 'none';
   }
@@ -294,7 +291,6 @@ async function stopBreak() {
 }
 
 optStart.addEventListener('click', () => startBreak());
-optQuickBtns.forEach(b => b.addEventListener('click', () => startBreak(parseInt(b.dataset.duration,10))));
 optStop.addEventListener('click', stopBreak);
 
 document.getElementById('addPatternForm').addEventListener('submit', (e) => {

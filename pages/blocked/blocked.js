@@ -8,7 +8,6 @@ const stopBtn = document.getElementById('stopBreakBtn');
 const timerEl = document.getElementById('breakTimer');
 const progress = document.getElementById('progressBar');
 const durInput = document.getElementById('durationInput');
-const quickBtns = document.querySelectorAll('.quickBreak');
 const countdown = document.getElementById('countdownOverlay');
 const delayTimer = document.getElementById('delayTimer');
 const cancelDelay = document.getElementById('cancelDelay');
@@ -123,9 +122,6 @@ continueDelay.addEventListener('click', () => {
 });
 
 btn.addEventListener('click', () => showDelay());
-quickBtns.forEach(b => {
-  b.addEventListener('click', () => showDelay(parseInt(b.dataset.duration,10)));
-});
 stopBtn.addEventListener('click', stopBreak);
 addExcBtn.addEventListener('click', async () => {
   const pattern = normalizeUrl(url);
@@ -189,12 +185,10 @@ function applyControls() {
   if (onBreak) {
     btn.disabled = true;
     durInput.disabled = true;
-    quickBtns.forEach(b => b.disabled = true);
     stopBtn.style.display = 'inline-block';
   } else {
     btn.disabled = limitActive;
     durInput.disabled = limitActive;
-    quickBtns.forEach(b => b.disabled = limitActive);
     stopBtn.style.display = 'none';
   }
 }
