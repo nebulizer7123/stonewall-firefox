@@ -38,6 +38,12 @@ h2 {
 
 .inline-add input[type="text"] {
   flex: 1;
+  width: auto;
+}
+
+.inline-add button {
+  margin: 0;
+  white-space: nowrap;
 }
 
 button {
