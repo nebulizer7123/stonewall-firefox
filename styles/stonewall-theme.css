@@ -14,6 +14,16 @@ h1, h2 {
   margin-top: 0;
 }
 
+.mode-section {
+  margin-bottom: 20px;
+  max-width: 320px;
+}
+
+.mode-section label {
+  display: block;
+  margin-bottom: 6px;
+}
+
 button {
   background-color: #5a9b8e;
   color: #ffffff;
@@ -158,4 +168,3 @@ body.blocked.noBreaks button {
 body.blocked.noBreaks button:hover {
   background-color: #aaaaaa;
 }
-
