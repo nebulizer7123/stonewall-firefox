@@ -9,7 +9,7 @@
   <h1>Stonewall Options</h1>
   <h2>Mode</h2>
   <div class="mode-section">
-    <label for="mode">Choose how Stonewall works</label>
+    <label for="mode">Mode selection</label>
     <select id="mode">
       <option value="block">Block</option>
       <option value="allow">Focus</option>
@@ -17,26 +17,26 @@
   </div>
 
   <h2 id="patternsHeading">Block List</h2>
-  <table id="patternsTable">
-    <thead><tr><th>URL Pattern</th><th></th></tr></thead>
-    <tbody></tbody>
-  </table>
   <form id="addPatternForm">
     <input id="newPattern" type="text" placeholder="https://example.com/path" required>
     <button type="submit">Add</button>
   </form>
+  <table id="patternsTable">
+    <thead><tr><th>URL Pattern</th><th></th></tr></thead>
+    <tbody></tbody>
+  </table>
 
   <div id="exceptionsSection" style="display:none;">
     <h2>Block Exceptions</h2>
-    <table id="exceptionsTable">
-      <thead><tr><th>URL Pattern</th><th></th></tr></thead>
-      <tbody></tbody>
-    </table>
     <form id="addExceptionForm">
       <input id="newException" type="text" placeholder="reddit.com/r/*/comments/" required>
       <button type="submit">Add</button>
     </form>
     <p class="patternHelp">Patterns match a domain and optional path. Use * as a wildcard. Example: reddit.com/r/*/comments/</p>
+    <table id="exceptionsTable">
+      <thead><tr><th>URL Pattern</th><th></th></tr></thead>
+      <tbody></tbody>
+    </table>
   </div>
 
   <h2>Focus Sessions</h2>
