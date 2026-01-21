@@ -17,6 +17,7 @@
   </div>
 
   <h2 id="patternsHeading">Block List</h2>
+  <p class="form-note">Add a URL pattern to your current list.</p>
   <form id="addPatternForm" class="inline-add">
     <button type="submit">Add</button>
     <input id="newPattern" type="text" placeholder="https://example.com/path" required>
@@ -28,11 +29,11 @@
 
   <div id="exceptionsSection" style="display:none;">
     <h2>Block Exceptions</h2>
+    <p class="patternHelp">Patterns match a domain and optional path. Use * as a wildcard. Example: reddit.com/r/*/comments/</p>
     <form id="addExceptionForm" class="inline-add">
       <button type="submit">Add</button>
       <input id="newException" type="text" placeholder="reddit.com/r/*/comments/" required>
     </form>
-    <p class="patternHelp">Patterns match a domain and optional path. Use * as a wildcard. Example: reddit.com/r/*/comments/</p>
     <table id="exceptionsTable">
       <thead><tr><th>URL Pattern</th><th></th></tr></thead>
       <tbody></tbody>
