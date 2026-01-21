@@ -1,8 +1,6 @@
 'use strict';
 
 const modeEl = document.getElementById('mode');
-const immediateEl = document.getElementById('immediate');
-const breakDurationEl = document.getElementById('breakDuration');
 const patternsBody = document.querySelector('#patternsTable tbody');
 const exceptionsSection = document.getElementById('exceptionsSection');
 const exceptionsBody = document.querySelector('#exceptionsTable tbody');
@@ -63,8 +61,6 @@ async function load() {
   Object.assign(state, data);
   const needsSave = normalizeSessions();
   modeEl.value = state.mode;
-  immediateEl.checked = state.immediate;
-  breakDurationEl.value = state.breakDuration;
   updatePatternsHeading();
   renderPatterns();
   renderExceptions();
@@ -259,16 +255,6 @@ modeEl.addEventListener('change', () => {
   updateExceptionsVisibility();
 });
 
-immediateEl.addEventListener('change', () => {
-  state.immediate = immediateEl.checked;
-  save();
-});
-
-breakDurationEl.addEventListener('change', () => {
-  state.breakDuration = parseInt(breakDurationEl.value, 10) || 0;
-  save();
-});
-
 document.getElementById('addPatternForm').addEventListener('submit', (e) => {
   e.preventDefault();
   const val = document.getElementById('newPattern').value.trim();
@@ -309,8 +295,6 @@ browser.storage.onChanged.addListener((changes, area) => {
       state[k] = changes[k].newValue;
     }
     modeEl.value = state.mode;
-    immediateEl.checked = state.immediate;
-    breakDurationEl.value = state.breakDuration;
     const normalized = normalizeSessions();
     updatePatternsHeading();
     renderPatterns();
