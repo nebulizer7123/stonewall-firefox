@@ -6,10 +6,19 @@ const DEFAULT_STATE = {
   blockPatterns: ['reddit.com'], // list of URL patterns when in block mode
   allowPatterns: [], // list of URL patterns when in allow mode
   exceptionPatterns: ['reddit.com/r/*/comments/'], // list of exception patterns within blocked URLs
-  sessions: [], // [{days:[0-6], start:'HH:MM', end:'HH:MM', break:5}]
+  sessions: [ // default focus session
+    {
+      id: 'default-session',
+      days: [1, 2, 3, 4, 5],
+      start: '08:00',
+      end: '17:00',
+      break: 15,
+      breaksAllowed: 3
+    }
+  ],
   immediate: false, // manual immediate block
   breakUntil: 0,
-  breakDuration: 5,
+  breakDuration: 15,
   resumeUrl: '',
   sessionBreakUsage: {}
 };

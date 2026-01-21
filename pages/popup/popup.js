@@ -22,7 +22,7 @@ let currentUrl = '';
 async function load() {
   const data = await browser.storage.local.get(['immediate','breakUntil','breakDuration','mode','exceptionPatterns']);
   Object.assign(state, data);
-  durInput.value = data.breakDuration || 5;
+  durInput.value = data.breakDuration || 15;
   const tabs = await browser.tabs.query({active:true, currentWindow:true});
   currentUrl = tabs[0] ? tabs[0].url : '';
   update();

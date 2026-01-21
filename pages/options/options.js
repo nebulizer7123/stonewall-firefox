@@ -17,10 +17,19 @@ let state = {
   blockPatterns: ['reddit.com'],
   allowPatterns: [],
   exceptionPatterns: ['reddit.com/r/*/comments/'],
-  sessions: [],
+  sessions: [
+    {
+      id: 'default-session',
+      days: [1,2,3,4,5],
+      start: '08:00',
+      end: '17:00',
+      break: 15,
+      breaksAllowed: 3
+    }
+  ],
   immediate: false,
   breakUntil: 0,
-  breakDuration: 5
+  breakDuration: 15
 };
 
 function generateSessionId() {

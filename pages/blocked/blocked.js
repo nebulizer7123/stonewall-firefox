@@ -58,7 +58,7 @@ function updateTimer() {
 
 async function startBreak(duration) {
   setBreakError('');
-  const dur = duration || parseInt(durInput.value, 10) || 5;
+  const dur = duration || parseInt(durInput.value, 10) || 15;
   let until;
   try {
     until = await browser.runtime.sendMessage({ type: 'start-break', duration: dur, url });
@@ -97,7 +97,7 @@ function hideDelay() {
 function showDelay(duration) {
   setBreakError('');
   hideDelay();
-  pendingDuration = duration || parseInt(durInput.value, 10) || 5;
+  pendingDuration = duration || parseInt(durInput.value, 10) || 15;
   let remaining = 15;
   delayTimer.textContent = `${remaining} seconds remaining`;
   countdown.style.display = 'block';
@@ -257,8 +257,8 @@ function dateKey(referenceDate = new Date()) {
     'sessionBreakUsage'
   ]);
   breakUntil = data.breakUntil || 0;
-  breakDuration = (data.breakDuration || 5) * 60000;
-  durInput.value = data.breakDuration || 5;
+  breakDuration = (data.breakDuration || 15) * 60000;
+  durInput.value = data.breakDuration || 15;
   mode = data.mode || 'block';
   exceptionPatterns = data.exceptionPatterns || [];
   sessions = Array.isArray(data.sessions) ? data.sessions : [];
