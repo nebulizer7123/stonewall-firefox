@@ -3,9 +3,6 @@
 const modeEl = document.getElementById('mode');
 const immediateEl = document.getElementById('immediate');
 const breakDurationEl = document.getElementById('breakDuration');
-const optBreakInput = document.getElementById('optBreakInput');
-const optStart = document.getElementById('optStart');
-const optStop = document.getElementById('optStop');
 const patternsBody = document.querySelector('#patternsTable tbody');
 const exceptionsSection = document.getElementById('exceptionsSection');
 const exceptionsBody = document.querySelector('#exceptionsTable tbody');
@@ -68,12 +65,10 @@ async function load() {
   modeEl.value = state.mode;
   immediateEl.checked = state.immediate;
   breakDurationEl.value = state.breakDuration;
-  optBreakInput.value = state.breakDuration;
   updatePatternsHeading();
   renderPatterns();
   renderExceptions();
   renderSessions();
-  updateBreakControls();
   updateExceptionsVisibility();
   if (needsSave) {
     save();
@@ -82,18 +77,6 @@ async function load() {
 
 function save() {
   return browser.storage.local.set(state);
-}
-
-function updateBreakControls() {
-  if (state.breakUntil && Date.now() < state.breakUntil) {
-    optStart.disabled = true;
-    optBreakInput.disabled = true;
-    optStop.style.display = 'inline-block';
-  } else {
-    optStart.disabled = false;
-    optBreakInput.disabled = false;
-    optStop.style.display = 'none';
-  }
 }
 
 function updatePatternsHeading() {
@@ -286,22 +269,6 @@ breakDurationEl.addEventListener('change', () => {
   save();
 });
 
-async function startBreak(duration) {
-  const dur = duration || parseInt(optBreakInput.value,10) || state.breakDuration;
-  const until = await browser.runtime.sendMessage({type:'start-break', duration:dur});
-  state.breakUntil = until;
-  updateBreakControls();
-}
-
-async function stopBreak() {
-  await browser.runtime.sendMessage({type:'stop-break'});
-  state.breakUntil = 0;
-  updateBreakControls();
-}
-
-optStart.addEventListener('click', () => startBreak());
-optStop.addEventListener('click', stopBreak);
-
 document.getElementById('addPatternForm').addEventListener('submit', (e) => {
   e.preventDefault();
   const val = document.getElementById('newPattern').value.trim();
@@ -344,13 +311,11 @@ browser.storage.onChanged.addListener((changes, area) => {
     modeEl.value = state.mode;
     immediateEl.checked = state.immediate;
     breakDurationEl.value = state.breakDuration;
-    optBreakInput.value = state.breakDuration;
     const normalized = normalizeSessions();
     updatePatternsHeading();
     renderPatterns();
     renderExceptions();
     renderSessions();
-    updateBreakControls();
     updateExceptionsVisibility();
     if (normalized) {
       save();
