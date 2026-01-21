@@ -14,13 +14,30 @@ let state = {
   immediate: false,
   breakUntil: 0,
   mode: 'block',
-  exceptionPatterns: ['reddit.com/r/*/comments/']
+  exceptionPatterns: ['reddit.com/r/*/comments/'],
+  sessions: [
+    {
+      id: 'default-session',
+      days: [1, 2, 3, 4, 5],
+      start: '08:00',
+      end: '17:00',
+      break: 15,
+      breaksAllowed: 3
+    }
+  ]
 };
 
 let currentUrl = '';
 
 async function load() {
-  const data = await browser.storage.local.get(['immediate','breakUntil','breakDuration','mode','exceptionPatterns']);
+  const data = await browser.storage.local.get([
+    'immediate',
+    'breakUntil',
+    'breakDuration',
+    'mode',
+    'exceptionPatterns',
+    'sessions'
+  ]);
   Object.assign(state, data);
   durInput.value = data.breakDuration || 15;
   const tabs = await browser.tabs.query({active:true, currentWindow:true});
@@ -29,8 +46,42 @@ async function load() {
   updateExceptionButton();
 }
 
+function isOnBreak() {
+  return state.breakUntil && Date.now() < state.breakUntil;
+}
+
+function withinSession(session, referenceDate = new Date()) {
+  if (!session || !Array.isArray(session.days)) return false;
+  const now = referenceDate instanceof Date ? referenceDate : new Date(referenceDate);
+  if (!session.days.includes(now.getDay())) return false;
+  if (typeof session.start !== 'string' || typeof session.end !== 'string') return false;
+  const [sh, sm] = session.start.split(':').map(Number);
+  const [eh, em] = session.end.split(':').map(Number);
+  if ([sh, sm, eh, em].some(Number.isNaN)) return false;
+  const startM = sh * 60 + sm;
+  const endM = eh * 60 + em;
+  const minutes = now.getHours() * 60 + now.getMinutes();
+  if (startM <= endM) return minutes >= startM && minutes < endM;
+  return minutes >= startM || minutes < endM;
+}
+
+function scheduledSessionActive() {
+  if (!Array.isArray(state.sessions)) return false;
+  return state.sessions.some(s => withinSession(s));
+}
+
+function focusActive() {
+  if (isOnBreak()) return false;
+  if (state.immediate) return true;
+  return scheduledSessionActive();
+}
+
 function update() {
-  if (state.breakUntil && Date.now() < state.breakUntil) {
+  const onBreak = isOnBreak();
+  const scheduled = scheduledSessionActive();
+  const active = focusActive();
+
+  if (onBreak) {
     const rem = Math.ceil((state.breakUntil - Date.now()) / 1000);
     stateEl.textContent = 'Break: ' + Math.floor(rem/60) + 'm ' + (rem%60) + 's';
     toggleBtn.textContent = 'Block Now';
@@ -38,9 +89,9 @@ function update() {
     startBtn.disabled = true;
     durInput.disabled = true;
     stopBtn.style.display = 'inline-block';
-  } else if (state.immediate) {
-    stateEl.textContent = 'Blocking';
-    toggleBtn.textContent = 'Unblock';
+  } else if (active) {
+    stateEl.textContent = scheduled && !state.immediate ? 'Blocking (Scheduled)' : 'Blocking';
+    toggleBtn.textContent = state.immediate ? 'Unblock' : 'Block Now';
     toggleBtn.disabled = false;
     startBtn.disabled = false;
     durInput.disabled = false;
@@ -156,6 +207,7 @@ browser.storage.onChanged.addListener((changes, area) => {
     if (changes.breakDuration) durInput.value = changes.breakDuration.newValue;
     if (changes.mode) state.mode = changes.mode.newValue;
     if (changes.exceptionPatterns) state.exceptionPatterns = changes.exceptionPatterns.newValue;
+    if (changes.sessions) state.sessions = changes.sessions.newValue;
     update();
     updateExceptionButton();
   }
