@@ -76,7 +76,7 @@ function save() {
 }
 
 function updatePatternsHeading() {
-  patternsHeading.textContent = state.mode === 'block' ? 'Block List' : 'Allow List';
+  patternsHeading.textContent = state.mode === 'block' ? 'Block List' : 'Focus List';
 }
 
 function getActiveList() {
