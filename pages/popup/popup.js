@@ -29,6 +29,21 @@ let state = {
 
 let currentUrl = '';
 
+function extractTargetUrl(tabUrl) {
+  if (!tabUrl) return '';
+  try {
+    const blockedPage = browser.runtime.getURL('pages/blocked/blocked.html');
+    if (tabUrl.startsWith(blockedPage)) {
+      const query = tabUrl.split('?')[1] || '';
+      const target = new URLSearchParams(query).get('url');
+      return target ? decodeURIComponent(target) : '';
+    }
+  } catch (e) {
+    // ignore parsing errors
+  }
+  return tabUrl;
+}
+
 async function load() {
   const data = await browser.storage.local.get([
     'immediate',
@@ -41,7 +56,7 @@ async function load() {
   Object.assign(state, data);
   durInput.value = data.breakDuration || 15;
   const tabs = await browser.tabs.query({active:true, currentWindow:true});
-  currentUrl = tabs[0] ? tabs[0].url : '';
+  currentUrl = tabs[0] ? extractTargetUrl(tabs[0].url) : '';
   update();
   updateExceptionButton();
 }
