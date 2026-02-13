@@ -9,70 +9,166 @@
   <main class="options-shell">
     <header class="page-header">
       <h1>Stonewall Preferences</h1>
-      <p>Set your blocking mode, URL lists, and focus sessions in one place.</p>
+      <p>Set your blocking mode, URL lists, focus sessions, and visual theme in one place.</p>
     </header>
 
-    <section class="settings-card">
-      <h2>Mode</h2>
-      <p class="form-note">Choose how Stonewall should behave.</p>
-      <div class="mode-section">
-        <label for="mode">Blocking mode</label>
-        <select id="mode">
-          <option value="block">Block listed URLs</option>
-          <option value="allow">Allow only listed URLs</option>
-        </select>
-      </div>
+    <nav class="options-tabs" role="tablist" aria-label="Options sections">
+      <button
+        id="tabBlocking"
+        class="options-tab is-active"
+        type="button"
+        role="tab"
+        aria-selected="true"
+        aria-controls="blockingPanel"
+        data-panel="blockingPanel"
+      >
+        Focus &amp; Blocking
+      </button>
+      <button
+        id="tabTheme"
+        class="options-tab"
+        type="button"
+        role="tab"
+        aria-selected="false"
+        aria-controls="themePanel"
+        data-panel="themePanel"
+      >
+        Themes
+      </button>
+    </nav>
+
+    <section
+      id="blockingPanel"
+      class="options-panel is-active"
+      role="tabpanel"
+      aria-labelledby="tabBlocking"
+    >
+      <section class="settings-card">
+        <h2>Mode</h2>
+        <p class="form-note">Choose how Stonewall should behave.</p>
+        <div class="mode-section">
+          <label for="mode">Blocking mode</label>
+          <select id="mode">
+            <option value="block">Block listed URLs</option>
+            <option value="allow">Allow only listed URLs</option>
+          </select>
+        </div>
+      </section>
+
+      <section class="settings-card">
+        <h2 id="patternsHeading">Block List</h2>
+        <p class="form-note">Add URL patterns to the current mode list.</p>
+        <form id="addPatternForm" class="inline-add">
+          <input id="newPattern" type="text" placeholder="https://example.com/path" required>
+          <button type="submit">Add Pattern</button>
+        </form>
+        <div class="table-wrap">
+          <table id="patternsTable">
+            <thead><tr><th>URL Pattern</th><th>Action</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="exceptionsSection" class="settings-card" style="display:none;">
+        <h2>Block Exceptions</h2>
+        <p class="form-note">Allow specific paths inside blocked sites. Use <code>*</code> as a wildcard.</p>
+        <form id="addExceptionForm" class="inline-add">
+          <input id="newException" type="text" placeholder="reddit.com/r/*/comments/" required>
+          <button type="submit">Add Exception</button>
+        </form>
+        <div class="table-wrap">
+          <table id="exceptionsTable">
+            <thead><tr><th>URL Pattern</th><th>Action</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="settings-card">
+        <div class="card-title-row">
+          <h2>Focus Sessions</h2>
+          <button id="addSession" class="add-session" type="button">Add Session</button>
+        </div>
+        <p class="form-note">Create scheduled focus blocks with daily break limits.</p>
+        <div class="table-wrap">
+          <table id="sessionsTable">
+            <thead>
+              <tr>
+                <th>Days</th><th>Start</th><th>End</th><th>Breaks Allowed</th><th>Break (min)</th><th>Action</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
     </section>
 
-    <section class="settings-card">
-      <h2 id="patternsHeading">Block List</h2>
-      <p class="form-note">Add URL patterns to the current mode list.</p>
-      <form id="addPatternForm" class="inline-add">
-        <input id="newPattern" type="text" placeholder="https://example.com/path" required>
-        <button type="submit">Add Pattern</button>
-      </form>
-      <div class="table-wrap">
-        <table id="patternsTable">
-          <thead><tr><th>URL Pattern</th><th>Action</th></tr></thead>
-          <tbody></tbody>
-        </table>
-      </div>
-    </section>
+    <section
+      id="themePanel"
+      class="options-panel"
+      role="tabpanel"
+      aria-labelledby="tabTheme"
+      hidden
+    >
+      <section class="settings-card">
+        <h2>Theme &amp; Colors</h2>
+        <p class="form-note">Classic is the default style with white light-mode backgrounds and brick-red buttons. Neon Roller Rink is an optional style preset.</p>
 
-    <section id="exceptionsSection" class="settings-card" style="display:none;">
-      <h2>Block Exceptions</h2>
-      <p class="form-note">Allow specific paths inside blocked sites. Use <code>*</code> as a wildcard.</p>
-      <form id="addExceptionForm" class="inline-add">
-        <input id="newException" type="text" placeholder="reddit.com/r/*/comments/" required>
-        <button type="submit">Add Exception</button>
-      </form>
-      <div class="table-wrap">
-        <table id="exceptionsTable">
-          <thead><tr><th>URL Pattern</th><th>Action</th></tr></thead>
-          <tbody></tbody>
-        </table>
-      </div>
-    </section>
+        <div class="mode-section">
+          <label for="themeStyle">Theme style</label>
+          <select id="themeStyle">
+            <option value="classic">Classic</option>
+            <option value="neon">Neon Roller Rink</option>
+          </select>
+        </div>
 
-    <section class="settings-card">
-      <div class="card-title-row">
-        <h2>Focus Sessions</h2>
-        <button id="addSession" class="add-session" type="button">Add Session</button>
-      </div>
-      <p class="form-note">Create scheduled focus blocks with daily break limits.</p>
-      <div class="table-wrap">
-        <table id="sessionsTable">
-          <thead>
-            <tr>
-              <th>Days</th><th>Start</th><th>End</th><th>Breaks Allowed</th><th>Break (min)</th><th>Action</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
+        <div class="mode-section">
+          <label for="themeMode">Color mode</label>
+          <select id="themeMode">
+            <option value="light">Light mode (default)</option>
+            <option value="dark">Dark mode</option>
+          </select>
+        </div>
+
+        <div class="theme-grid">
+          <label for="themeBackground">Page background
+            <input id="themeBackground" type="color">
+          </label>
+          <label for="themeSurface">Card surface
+            <input id="themeSurface" type="color">
+          </label>
+          <label for="themeText">Primary text
+            <input id="themeText" type="color">
+          </label>
+          <label for="themeAccent">Accent color
+            <input id="themeAccent" type="color">
+          </label>
+          <label for="themeButton">Button color
+            <input id="themeButton" type="color">
+          </label>
+          <label for="themeButtonText">Button text
+            <input id="themeButtonText" type="color">
+          </label>
+        </div>
+
+        <div class="theme-actions">
+          <button id="resetThemeMode" type="button">Reset Current Mode Palette</button>
+          <button id="resetThemeAll" type="button">Reset To Default Light Theme</button>
+        </div>
+
+        <div class="theme-preview" aria-hidden="true">
+          <p class="theme-preview-title">Preview</p>
+          <div class="theme-preview-card">
+            <button type="button">Brick Button</button>
+            <a href="#">Accent Link</a>
+          </div>
+        </div>
+      </section>
     </section>
   </main>
 
+  <script src="../../styles/theme.js"></script>
   <script src="options.js"></script>
 </body>
 </html>
