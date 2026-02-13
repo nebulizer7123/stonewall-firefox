@@ -31,7 +31,7 @@ let sessions = [];
 let sessionBreakUsage = {};
 let noBreaksRemaining = false;
 
-msgEl.textContent = `The following URL is blocked: ${url}`;
+msgEl.textContent = url || 'Unknown URL';
 
 function updateTimer() {
   const now = Date.now();

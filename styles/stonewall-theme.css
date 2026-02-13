@@ -493,35 +493,102 @@ body.popup-page {
 
 body.blocked {
   min-height: 100vh;
+  padding: 24px;
   display: flex;
-  flex-direction: column;
-  justify-content: center;
   align-items: center;
-  text-align: center;
-  gap: 8px;
+  justify-content: center;
 }
 
-body.blocked > * {
-  max-width: 520px;
+.blocked-shell {
+  width: min(700px, 100%);
+}
+
+.blocked-card {
+  background: var(--theme-surface);
+  border: 1px solid var(--theme-border);
+  border-radius: 14px;
+  box-shadow: 0 8px 18px var(--theme-shadow);
+  padding: 24px;
+  display: grid;
+  gap: 10px;
+}
+
+.blocked-card h1 {
+  margin: 0;
+  font-size: 30px;
+  line-height: 1.1;
+  text-shadow: 0 0 8px var(--theme-accent-shadow);
+}
+
+.blocked-note {
+  margin: 0;
+  color: var(--theme-muted);
+}
+
+.blocked-url {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--theme-border);
+  border-radius: 10px;
+  background: var(--theme-input);
+  font-weight: 600;
+  word-break: break-all;
+}
+
+.blocked-url-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.blocked-url-row .blocked-url {
+  height: 100%;
+}
+
+.blocked-card .blocked-exception-btn {
+  width: auto;
+  min-height: 100%;
+  white-space: nowrap;
+  justify-self: start;
+}
+
+.blocked-duration-label {
+  color: var(--theme-muted);
+  font-size: 14px;
+}
+
+.blocked-break-row {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 8px;
+  align-items: center;
+}
+
+.blocked-card button {
+  width: 100%;
+  margin: 0;
 }
 
 #breakTimer {
-  margin-top: 8px;
+  margin-top: 6px;
   font-weight: 700;
+  color: var(--theme-muted);
 }
 
 #blockedExceptionMsg,
 #breakError {
   min-height: 18px;
   color: var(--theme-muted);
+  font-size: 13px;
 }
 
 #progressContainer {
-  width: min(80%, 520px);
+  width: 100%;
   height: 12px;
   background-color: var(--theme-progress-track);
   border-radius: 6px;
-  margin-top: 8px;
+  margin-top: 6px;
   overflow: hidden;
 }
 
@@ -533,7 +600,7 @@ body.blocked > * {
 }
 
 #countdownOverlay {
-  margin-top: 16px;
+  margin-top: 8px;
   padding: 10px;
   border: 1px solid var(--theme-border);
   border-radius: 10px;
@@ -541,8 +608,8 @@ body.blocked > * {
 }
 
 #delayTimer {
-  font-size: 24px;
-  margin: 8px 0;
+  font-size: 18px;
+  margin: 6px 0;
 }
 
 .buttonRow {
@@ -555,27 +622,20 @@ body.blocked > * {
   flex: 1;
 }
 
-body.blocked.noBreaks {
-  background: linear-gradient(160deg, var(--theme-no-break-bg), var(--theme-no-break-bg));
-  color: var(--theme-no-break-text);
-  filter: grayscale(100%);
+body.blocked.noBreaks .blocked-card {
+  border-style: dashed;
 }
 
 body.blocked.noBreaks #progressContainer {
-  background-color: #b5b5b5;
+  opacity: 0.75;
 }
 
 body.blocked.noBreaks #progressBar {
-  background: linear-gradient(to right, #c8c8c8, #a8a8a8);
+  opacity: 0.45;
 }
 
-body.blocked.noBreaks button {
-  background-color: #a8a8a8;
-  color: #f4f4f4;
-}
-
-body.blocked.noBreaks button:hover {
-  background-color: #9a9a9a;
+body.blocked.noBreaks .blocked-card button {
+  opacity: 0.75;
 }
 
 @media (max-width: 760px) {
@@ -602,6 +662,30 @@ body.blocked.noBreaks button:hover {
   }
 
   .theme-actions button {
+    width: 100%;
+  }
+
+  body.blocked {
+    padding: 16px;
+  }
+
+  .blocked-card {
+    padding: 16px;
+  }
+
+  .blocked-card h1 {
+    font-size: 24px;
+  }
+
+  .blocked-break-row {
+    grid-template-columns: 1fr;
+  }
+
+  .blocked-url-row {
+    grid-template-columns: 1fr;
+  }
+
+  .blocked-card .blocked-exception-btn {
     width: 100%;
   }
 }

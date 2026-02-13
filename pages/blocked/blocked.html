@@ -6,25 +6,36 @@
   <link rel="stylesheet" href="../../styles/stonewall-theme.css">
 </head>
 <body class="blocked">
-  <p id="msg"></p>
-  <label>Break Duration (min)
-    <input id="durationInput" type="number" min="1">
-  </label>
-  <button id="breakBtn">Start Break</button>
-  <button id="stopBreakBtn" style="display:none;">Stop Break</button>
-  <button id="addExceptionBtn">Add to Exception List</button>
-  <div id="blockedExceptionMsg" aria-live="polite"></div>
-  <div id="breakError" aria-live="polite"></div>
-  <div id="progressContainer"><div id="progressBar"></div></div>
-  <div id="breakTimer"></div>
-  <div id="countdownOverlay" style="display:none;">
-    <div id="delayMessage" aria-live="polite">Please wait 15 seconds…</div>
-    <div id="delayTimer" aria-live="polite">15 seconds remaining</div>
-    <div class="buttonRow">
-      <button id="cancelDelay">Cancel</button>
-      <button id="continueDelay" disabled>Continue</button>
-    </div>
-  </div>
+  <main class="blocked-shell">
+    <section class="blocked-card">
+      <h1>Blocked by Stonewall</h1>
+      <p class="blocked-note">This URL is currently blocked by your focus settings.</p>
+      <div class="blocked-url-row">
+        <p id="msg" class="blocked-url"></p>
+        <button id="addExceptionBtn" class="blocked-exception-btn">Add to Exception List</button>
+      </div>
+
+      <label class="blocked-duration-label" for="durationInput">Break Duration (min)</label>
+      <div class="blocked-break-row">
+        <input id="durationInput" type="number" min="1">
+        <button id="breakBtn">Start Break</button>
+      </div>
+
+      <button id="stopBreakBtn" style="display:none;">Stop Break</button>
+      <div id="blockedExceptionMsg" aria-live="polite"></div>
+      <div id="breakError" aria-live="polite"></div>
+      <div id="progressContainer"><div id="progressBar"></div></div>
+      <div id="breakTimer"></div>
+      <div id="countdownOverlay" style="display:none;">
+        <div id="delayMessage" aria-live="polite">Please wait 15 seconds…</div>
+        <div id="delayTimer" aria-live="polite">15 seconds remaining</div>
+        <div class="buttonRow">
+          <button id="cancelDelay">Cancel</button>
+          <button id="continueDelay" disabled>Continue</button>
+        </div>
+      </div>
+    </section>
+  </main>
   <script src="../../styles/theme.js"></script>
   <script src="blocked.js"></script>
 </body>

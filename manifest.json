@@ -28,7 +28,8 @@
   },
   "web_accessible_resources": [
     "pages/blocked/blocked.html",
-    "styles/stonewall-theme.css"
+    "styles/stonewall-theme.css",
+    "styles/neon-rink-carpet.svg"
   ],
   "browser_specific_settings": {
     "gecko": {
