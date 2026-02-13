@@ -128,6 +128,106 @@ body.options-page {
   box-shadow: none;
 }
 
+body.popup-page {
+  width: 280px;
+  background: #eef4f3;
+  color: #243331;
+  padding: 10px;
+}
+
+.popup-shell {
+  background: #ffffff;
+  border: 1px solid #d7e2df;
+  border-radius: 12px;
+  padding: 12px;
+  display: grid;
+  gap: 10px;
+}
+
+.popup-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.popup-header h1 {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.2;
+}
+
+.popup-page #state {
+  margin: 0;
+  max-width: 140px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background: #e9f3f1;
+  color: #33534e;
+}
+
+.popup-block {
+  display: grid;
+  gap: 8px;
+}
+
+.popup-break label {
+  font-size: 13px;
+  color: #445e5a;
+}
+
+.break-input-row {
+  display: grid;
+  grid-template-columns: 90px 1fr;
+  gap: 8px;
+  align-items: center;
+}
+
+.popup-page button {
+  width: 100%;
+  margin: 0;
+  box-shadow: none;
+}
+
+.popup-page #countdownOverlay {
+  margin-top: 0;
+  padding: 8px;
+  border: 1px solid #d7e2df;
+  border-radius: 10px;
+  background: #f5faf9;
+}
+
+.popup-page #delayMessage {
+  font-size: 12px;
+  color: #5a7470;
+}
+
+.popup-page #delayTimer {
+  font-size: 16px;
+  margin: 6px 0;
+}
+
+.popup-page .buttonRow {
+  gap: 6px;
+}
+
+.popup-msg {
+  min-height: 16px;
+  font-size: 12px;
+  color: #5a7470;
+}
+
+.popup-page #openOptions {
+  justify-self: end;
+  font-size: 12px;
+  font-weight: 600;
+}
+
 button {
   background-color: #5a9b8e;
   color: #ffffff;
@@ -189,6 +289,7 @@ td, th {
 
 input[type="text"],
 input[type="time"],
+input[type="number"],
 select {
   width: 100%;
   padding: 8px;
@@ -200,6 +301,7 @@ select {
 
 input[type="text"]:focus,
 input[type="time"]:focus,
+input[type="number"]:focus,
 select:focus {
   outline: none;
   border-color: #5a9b8e;

@@ -4,34 +4,40 @@
   <meta charset="utf-8">
   <title>Stonewall</title>
   <link rel="stylesheet" href="../../styles/stonewall-theme.css">
-  <style>
-    body { width: 240px; }
-    #countdownOverlay { margin-top: 8px; }
-    #delayTimer { font-size: 18px; }
-  </style>
 </head>
-<body>
-  <div id="state"></div>
-  <button id="toggle"></button>
-  <button id="addException">Add to Exception List</button>
-  <div id="exceptionMsg" aria-live="polite"></div>
-  <div>
-    <label>Break (min)
-      <input id="popupDuration" type="number" min="1">
-    </label>
-    <button id="popupStart">Start Break</button>
-    <button id="popupStop" style="display:none;">Stop Break</button>
-  </div>
-  <div id="countdownOverlay" style="display:none;">
-    <div id="delayMessage" aria-live="polite">Please wait 15 seconds...</div>
-    <div id="delayTimer" aria-live="polite">15 seconds remaining</div>
-    <div class="buttonRow">
-      <button id="cancelDelay">Cancel</button>
-      <button id="continueDelay" disabled>Continue</button>
-    </div>
-  </div>
-  <div id="popupBreakMsg" aria-live="polite"></div>
-  <a id="openOptions" href="#">Preferences</a>
+<body class="popup-page">
+  <main class="popup-shell">
+    <header class="popup-header">
+      <h1>Stonewall</h1>
+      <div id="state" aria-live="polite"></div>
+    </header>
+
+    <section class="popup-block">
+      <button id="toggle"></button>
+      <button id="addException">Add to Exception List</button>
+      <div id="exceptionMsg" class="popup-msg" aria-live="polite"></div>
+    </section>
+
+    <section class="popup-block popup-break">
+      <label for="popupDuration">Break (minutes)</label>
+      <div class="break-input-row">
+        <input id="popupDuration" type="number" min="1">
+        <button id="popupStart">Start Break</button>
+      </div>
+      <button id="popupStop" style="display:none;">Stop Break</button>
+      <div id="countdownOverlay" style="display:none;">
+        <div id="delayMessage" aria-live="polite">Please wait 15 seconds...</div>
+        <div id="delayTimer" aria-live="polite">15 seconds remaining</div>
+        <div class="buttonRow">
+          <button id="cancelDelay">Cancel</button>
+          <button id="continueDelay" disabled>Continue</button>
+        </div>
+      </div>
+      <div id="popupBreakMsg" class="popup-msg" aria-live="polite"></div>
+    </section>
+
+    <a id="openOptions" href="#">Open Preferences</a>
+  </main>
   <script src="popup.js"></script>
 </body>
 </html>
