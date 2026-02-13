@@ -9,6 +9,13 @@ const stopBtn = document.getElementById('popupStop');
 const exceptionBtn = document.getElementById('addException');
 const exceptionMsg = document.getElementById('exceptionMsg');
 const breakMsg = document.getElementById('popupBreakMsg');
+const countdown = document.getElementById('countdownOverlay');
+const delayMessage = document.getElementById('delayMessage');
+const delayTimer = document.getElementById('delayTimer');
+const cancelDelay = document.getElementById('cancelDelay');
+const continueDelay = document.getElementById('continueDelay');
+
+const BREAK_START_DELAY_SECONDS = 15;
 
 let state = {
   immediate: false,
@@ -28,6 +35,8 @@ let state = {
 };
 
 let currentUrl = '';
+let delayInterval = null;
+let pendingDuration = 0;
 
 function extractTargetUrl(tabUrl) {
   if (!tabUrl) return '';
@@ -36,7 +45,7 @@ function extractTargetUrl(tabUrl) {
     if (tabUrl.startsWith(blockedPage)) {
       const query = tabUrl.split('?')[1] || '';
       const target = new URLSearchParams(query).get('url');
-      return target ? decodeURIComponent(target) : '';
+      return target || '';
     }
   } catch (e) {
     // ignore parsing errors
@@ -97,6 +106,7 @@ function update() {
   const active = focusActive();
 
   if (onBreak) {
+    hideDelay();
     const rem = Math.ceil((state.breakUntil - Date.now()) / 1000);
     stateEl.textContent = 'Break: ' + Math.floor(rem/60) + 'm ' + (rem%60) + 's';
     toggleBtn.textContent = 'Block Now';
@@ -123,6 +133,7 @@ function update() {
 
 toggleBtn.addEventListener('click', () => {
   if (state.breakUntil && Date.now() < state.breakUntil) return;
+  hideDelay();
   if (state.immediate) {
     browser.runtime.sendMessage({type: 'unblock-now'});
     state.immediate = false;
@@ -135,10 +146,10 @@ toggleBtn.addEventListener('click', () => {
 
 async function startBreak(duration) {
   setBreakMsg('');
-  const dur = duration || parseInt(durInput.value,10) || 5;
+  const dur = duration || parseInt(durInput.value,10) || 15;
   let until;
   try {
-    until = await browser.runtime.sendMessage({type:'start-break', duration:dur});
+    until = await browser.runtime.sendMessage({type:'start-break', duration:dur, url: currentUrl});
   } catch (err) {
     if (err && (err.code === 'break-limit' || err.message === 'break-limit')) {
       setBreakMsg('No breaks remaining for this focus session.');
@@ -152,14 +163,62 @@ async function startBreak(duration) {
 }
 
 async function stopBreak() {
+  hideDelay();
   await browser.runtime.sendMessage({type:'stop-break'});
   state.breakUntil = 0;
   update();
   setBreakMsg('');
 }
 
-startBtn.addEventListener('click', () => startBreak());
+function hideDelay() {
+  if (delayInterval) {
+    clearInterval(delayInterval);
+    delayInterval = null;
+  }
+  if (countdown) {
+    countdown.style.display = 'none';
+  }
+}
+
+function showDelay(duration) {
+  if (!countdown || !delayTimer || !continueDelay) {
+    startBreak(duration);
+    return;
+  }
+  setBreakMsg('');
+  hideDelay();
+  pendingDuration = duration || parseInt(durInput.value, 10) || 15;
+  let remaining = BREAK_START_DELAY_SECONDS;
+  if (delayMessage) {
+    delayMessage.textContent = `Please wait ${BREAK_START_DELAY_SECONDS} seconds...`;
+  }
+  delayTimer.textContent = `${remaining} seconds remaining`;
+  countdown.style.display = 'block';
+  continueDelay.disabled = true;
+  delayInterval = setInterval(() => {
+    remaining -= 1;
+    if (remaining > 0) {
+      delayTimer.textContent = `${remaining} seconds remaining`;
+      return;
+    }
+    clearInterval(delayInterval);
+    delayInterval = null;
+    delayTimer.textContent = 'Ready';
+    continueDelay.disabled = false;
+  }, 1000);
+}
+
+startBtn.addEventListener('click', () => showDelay());
 stopBtn.addEventListener('click', stopBreak);
+if (cancelDelay) {
+  cancelDelay.addEventListener('click', () => hideDelay());
+}
+if (continueDelay) {
+  continueDelay.addEventListener('click', () => {
+    hideDelay();
+    startBreak(pendingDuration);
+  });
+}
 
 optionsLink.addEventListener('click', (e) => {
   e.preventDefault();

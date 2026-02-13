@@ -9,6 +9,7 @@ const timerEl = document.getElementById('breakTimer');
 const progress = document.getElementById('progressBar');
 const durInput = document.getElementById('durationInput');
 const countdown = document.getElementById('countdownOverlay');
+const delayMessage = document.getElementById('delayMessage');
 const delayTimer = document.getElementById('delayTimer');
 const cancelDelay = document.getElementById('cancelDelay');
 const continueDelay = document.getElementById('continueDelay');
@@ -16,6 +17,8 @@ const addExcBtn = document.getElementById('addExceptionBtn');
 const excMsg = document.getElementById('blockedExceptionMsg');
 const breakError = document.getElementById('breakError');
 const bodyEl = document.body;
+
+const BREAK_START_DELAY_SECONDS = 15;
 
 let breakUntil = 0;
 let breakDuration = 0; // ms
@@ -98,7 +101,10 @@ function showDelay(duration) {
   setBreakError('');
   hideDelay();
   pendingDuration = duration || parseInt(durInput.value, 10) || 15;
-  let remaining = 15;
+  let remaining = BREAK_START_DELAY_SECONDS;
+  if (delayMessage) {
+    delayMessage.textContent = `Please wait ${BREAK_START_DELAY_SECONDS} seconds...`;
+  }
   delayTimer.textContent = `${remaining} seconds remaining`;
   countdown.style.display = 'block';
   continueDelay.disabled = true;
