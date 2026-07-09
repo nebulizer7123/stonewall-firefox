@@ -1,2 +1,6 @@
 .DS_Store
 web-ext-artifacts/
+
+# Printed unlock codes contain the plaintext QR secret — never commit them
+Stonewall Unlock Code.pdf
+*.unlock.pdf

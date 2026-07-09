@@ -430,7 +430,7 @@ function renderLockControls() {
   }
 
   enableLockBtn.style.display = !hasQr || !state.settingsLocked ? 'inline-block' : 'none';
-  enableLockBtn.textContent = hasQr ? 'Re-enable Lock' : 'Enable Lock & Print QR';
+  enableLockBtn.textContent = hasQr ? 'Re-enable Lock' : 'Settings Lock';
   unlockQrBtn.style.display = locked ? 'inline-block' : 'none';
   relockNowBtn.style.display = editWindow ? 'inline-block' : 'none';
   regenQrBtn.style.display = hasQr && !locked ? 'inline-block' : 'none';
