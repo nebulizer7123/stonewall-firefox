@@ -7,6 +7,7 @@ const durInput = document.getElementById('popupDuration');
 const startBtn = document.getElementById('popupStart');
 const stopBtn = document.getElementById('popupStop');
 const exceptionBtn = document.getElementById('addException');
+const extraBreakBtn = document.getElementById('extraBreak');
 const exceptionMsg = document.getElementById('exceptionMsg');
 const breakMsg = document.getElementById('popupBreakMsg');
 const countdown = document.getElementById('countdownOverlay');
@@ -21,6 +22,11 @@ let state = {
   immediate: false,
   breakUntil: 0,
   mode: 'block',
+  settingsLocked: false,
+  unlockUntil: 0,
+  qrSecretHash: '',
+  lastBreakEndedAt: 0,
+  breakCooldownMinutes: 20,
   exceptionPatterns: ['reddit.com/r/*/comments/'],
   sessions: [
     {
@@ -60,10 +66,15 @@ async function load() {
     'breakDuration',
     'mode',
     'exceptionPatterns',
-    'sessions'
+    'sessions',
+    'settingsLocked',
+    'unlockUntil',
+    'qrSecretHash',
+    'lastBreakEndedAt',
+    'breakCooldownMinutes'
   ]);
   Object.assign(state, data);
-  durInput.value = data.breakDuration || 15;
+  durInput.value = data.breakDuration || 5;
   const tabs = await browser.tabs.query({active:true, currentWindow:true});
   currentUrl = tabs[0] ? extractTargetUrl(tabs[0].url) : '';
   update();
@@ -100,6 +111,18 @@ function focusActive() {
   return scheduledSessionActive();
 }
 
+function isLockedNow() {
+  return state.settingsLocked && Date.now() >= (state.unlockUntil || 0);
+}
+
+function cooldownRemainingMs() {
+  if (!state.lastBreakEndedAt) return 0;
+  const next = state.lastBreakEndedAt + (state.breakCooldownMinutes || 20) * 60000;
+  return Math.max(0, next - Date.now());
+}
+
+let cooldownMsgShown = false;
+
 function update() {
   const onBreak = isOnBreak();
   const scheduled = scheduledSessionActive();
@@ -117,7 +140,7 @@ function update() {
   } else if (active) {
     stateEl.textContent = scheduled && !state.immediate ? 'Blocking (Scheduled)' : 'Blocking';
     toggleBtn.textContent = state.immediate ? 'Unblock' : 'Block Now';
-    toggleBtn.disabled = false;
+    toggleBtn.disabled = state.immediate && isLockedNow();
     startBtn.disabled = false;
     durInput.disabled = false;
     stopBtn.style.display = 'none';
@@ -128,6 +151,22 @@ function update() {
     startBtn.disabled = false;
     durInput.disabled = false;
     stopBtn.style.display = 'none';
+  }
+
+  const cooldown = onBreak ? 0 : cooldownRemainingMs();
+  if (cooldown > 0) {
+    startBtn.disabled = true;
+    durInput.disabled = true;
+    const sec = Math.ceil(cooldown / 1000);
+    setBreakMsg('Next break available in ' + Math.floor(sec / 60) + 'm ' + (sec % 60) + 's');
+    cooldownMsgShown = true;
+  } else if (cooldownMsgShown) {
+    cooldownMsgShown = false;
+    setBreakMsg('');
+  }
+
+  if (extraBreakBtn) {
+    extraBreakBtn.style.display = state.qrSecretHash && !onBreak ? 'inline-block' : 'none';
   }
 }
 
@@ -146,13 +185,16 @@ toggleBtn.addEventListener('click', () => {
 
 async function startBreak(duration) {
   setBreakMsg('');
-  const dur = duration || parseInt(durInput.value,10) || 15;
+  const dur = duration || parseInt(durInput.value,10) || 5;
   let until;
   try {
     until = await browser.runtime.sendMessage({type:'start-break', duration:dur, url: currentUrl});
   } catch (err) {
-    if (err && (err.code === 'break-limit' || err.message === 'break-limit')) {
+    const reason = err && (err.code || err.message);
+    if (reason === 'break-limit') {
       setBreakMsg('No breaks remaining for this focus session.');
+    } else if (reason === 'break-cooldown') {
+      setBreakMsg('Breaks are limited to one every ' + (state.breakCooldownMinutes || 20) + ' minutes.');
     } else {
       setBreakMsg('Unable to start break. Please try again.');
     }
@@ -187,7 +229,7 @@ function showDelay(duration) {
   }
   setBreakMsg('');
   hideDelay();
-  pendingDuration = duration || parseInt(durInput.value, 10) || 15;
+  pendingDuration = duration || parseInt(durInput.value, 10) || 5;
   let remaining = BREAK_START_DELAY_SECONDS;
   if (delayMessage) {
     delayMessage.textContent = `Please wait ${BREAK_START_DELAY_SECONDS} seconds...`;
@@ -224,6 +266,17 @@ optionsLink.addEventListener('click', (e) => {
   e.preventDefault();
   browser.runtime.openOptionsPage();
 });
+
+if (extraBreakBtn) {
+  extraBreakBtn.addEventListener('click', () => {
+    const dur = parseInt(durInput.value, 10) || 5;
+    const target = browser.runtime.getURL('pages/unlock/unlock.html') +
+      '?purpose=extra-break&duration=' + dur +
+      (currentUrl ? '&url=' + encodeURIComponent(currentUrl) : '');
+    browser.tabs.create({ url: target });
+    window.close();
+  });
+}
 
 function normalizeUrl(url) {
   try {
@@ -282,6 +335,11 @@ browser.storage.onChanged.addListener((changes, area) => {
     if (changes.mode) state.mode = changes.mode.newValue;
     if (changes.exceptionPatterns) state.exceptionPatterns = changes.exceptionPatterns.newValue;
     if (changes.sessions) state.sessions = changes.sessions.newValue;
+    if (changes.settingsLocked) state.settingsLocked = changes.settingsLocked.newValue;
+    if (changes.unlockUntil) state.unlockUntil = changes.unlockUntil.newValue;
+    if (changes.qrSecretHash) state.qrSecretHash = changes.qrSecretHash.newValue;
+    if (changes.lastBreakEndedAt) state.lastBreakEndedAt = changes.lastBreakEndedAt.newValue;
+    if (changes.breakCooldownMinutes) state.breakCooldownMinutes = changes.breakCooldownMinutes.newValue;
     update();
     updateExceptionButton();
   }

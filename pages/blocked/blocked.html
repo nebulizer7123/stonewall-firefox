@@ -17,12 +17,14 @@
 
       <label class="blocked-duration-label" for="durationInput">Break Duration (min)</label>
       <div class="blocked-break-row">
-        <input id="durationInput" type="number" min="1">
+        <input id="durationInput" type="number" min="1" max="15">
         <button id="breakBtn">Start Break</button>
       </div>
 
       <button id="stopBreakBtn" style="display:none;">Stop Break</button>
+      <button id="extraBreakBtn" style="display:none;">Extra Break (scan QR)</button>
       <div id="blockedExceptionMsg" aria-live="polite"></div>
+      <div id="cooldownMsg" aria-live="polite"></div>
       <div id="breakError" aria-live="polite"></div>
       <div id="progressContainer"><div id="progressBar"></div></div>
       <div id="breakTimer"></div>

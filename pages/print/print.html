@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Stonewall Unlock Code</title>
+  <link rel="stylesheet" href="../../styles/stonewall-theme.css">
+</head>
+<body class="print-page">
+  <main class="print-shell">
+    <section class="settings-card print-card">
+      <h1>Your Unlock Code</h1>
+      <div id="printIntro">
+        <p class="form-note">
+          Print this QR code and keep the paper away from your computer &mdash; in
+          another room, or hand it to someone you trust. Unlocking your settings or
+          taking an extra break will require scanning it with your webcam.
+        </p>
+        <p class="form-note print-warning">
+          This code is shown only once and cannot be recovered. If you lose the
+          printout, the only way back in is clearing the extension&rsquo;s data.
+          Settings stay unlocked until you confirm below, so print first.
+        </p>
+      </div>
+      <div id="qrContainer" class="qr-container" aria-label="Unlock QR code"></div>
+      <div id="printActions" class="buttonRow">
+        <button id="printBtn" type="button">Print</button>
+        <button id="confirmBtn" type="button" disabled>I printed it &mdash; lock my settings</button>
+      </div>
+      <div id="printMsg" class="form-note" aria-live="polite"></div>
+    </section>
+  </main>
+  <script src="../../styles/theme.js"></script>
+  <script src="../../libs/qrcode.js"></script>
+  <script src="print.js"></script>
+</body>
+</html>

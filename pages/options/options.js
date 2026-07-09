@@ -115,9 +115,23 @@ let state = {
   ],
   immediate: false,
   breakUntil: 0,
-  breakDuration: 15,
+  breakDuration: 5,
+  settingsLocked: false,
+  unlockUntil: 0,
+  qrSecretHash: '',
   themeSettings: createDefaultThemeSettings(THEME_MODE_LIGHT)
 };
+
+const lockStatusEl = document.getElementById('lockStatus');
+const enableLockBtn = document.getElementById('enableLock');
+const unlockQrBtn = document.getElementById('unlockQr');
+const relockNowBtn = document.getElementById('relockNow');
+const regenQrBtn = document.getElementById('regenQr');
+const disableLockBtn = document.getElementById('disableLock');
+
+function isLockedNow() {
+  return state.settingsLocked && Date.now() >= (state.unlockUntil || 0);
+}
 
 function generateSessionId() {
   return 'ses-' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
@@ -159,6 +173,8 @@ async function load() {
   renderExceptions();
   renderSessions();
   updateExceptionsVisibility();
+  lastRenderedLockState = isLockedNow();
+  renderLockControls();
   renderThemeControls();
   applyThemeLocally(state.themeSettings);
   setActiveTab('blockingPanel');
@@ -190,6 +206,7 @@ function updateExceptionsVisibility() {
 }
 
 function renderPatterns() {
+  const locked = isLockedNow();
   patternsBody.innerHTML = '';
   const list = getActiveList();
   list.forEach((pattern, index) => {
@@ -198,6 +215,7 @@ function renderPatterns() {
     const input = document.createElement('input');
     input.type = 'text';
     input.value = pattern;
+    input.disabled = locked;
     input.addEventListener('change', () => {
       if (input.value.trim()) {
         list[index] = input.value.trim();
@@ -212,6 +230,7 @@ function renderPatterns() {
     const tdAct = document.createElement('td');
     const btn = document.createElement('button');
     btn.textContent = 'Remove';
+    btn.disabled = locked;
     btn.addEventListener('click', () => {
       list.splice(index, 1);
       save();
@@ -226,6 +245,7 @@ function renderPatterns() {
 }
 
 function renderExceptions() {
+  const locked = isLockedNow();
   exceptionsBody.innerHTML = '';
   state.exceptionPatterns.forEach((pattern, index) => {
     const tr = document.createElement('tr');
@@ -233,6 +253,7 @@ function renderExceptions() {
     const input = document.createElement('input');
     input.type = 'text';
     input.value = pattern;
+    input.disabled = locked;
     input.addEventListener('change', () => {
       if (input.value.trim()) {
         state.exceptionPatterns[index] = input.value.trim();
@@ -247,6 +268,7 @@ function renderExceptions() {
     const tdAct = document.createElement('td');
     const btn = document.createElement('button');
     btn.textContent = 'Remove';
+    btn.disabled = locked;
     btn.addEventListener('click', () => {
       state.exceptionPatterns.splice(index, 1);
       save();
@@ -261,6 +283,7 @@ function renderExceptions() {
 }
 
 function renderSessions() {
+  const locked = isLockedNow();
   sessionsBody.innerHTML = '';
   state.sessions.forEach((session, idx) => {
     const tr = document.createElement('tr');
@@ -272,6 +295,7 @@ function renderSessions() {
       const cb = document.createElement('input');
       cb.type = 'checkbox';
       cb.checked = session.days.includes(dayIndex);
+      cb.disabled = locked;
       cb.addEventListener('change', () => {
         if (cb.checked) {
           if (!session.days.includes(dayIndex)) session.days.push(dayIndex);
@@ -289,6 +313,7 @@ function renderSessions() {
     const start = document.createElement('input');
     start.type = 'time';
     start.value = session.start;
+    start.disabled = locked;
     start.addEventListener('change', () => {
       session.start = start.value;
       save();
@@ -299,6 +324,7 @@ function renderSessions() {
     const end = document.createElement('input');
     end.type = 'time';
     end.value = session.end;
+    end.disabled = locked;
     end.addEventListener('change', () => {
       session.end = end.value;
       save();
@@ -320,6 +346,7 @@ function renderSessions() {
       allowed.appendChild(opt);
     });
     allowed.value = String(typeof session.breaksAllowed === 'number' ? session.breaksAllowed : 0);
+    allowed.disabled = locked;
     allowed.addEventListener('change', () => {
       session.breaksAllowed = parseInt(allowed.value, 10);
       save();
@@ -331,6 +358,7 @@ function renderSessions() {
     br.type = 'number';
     br.min = '0';
     br.value = session.break;
+    br.disabled = locked;
     br.addEventListener('change', () => {
       session.break = parseInt(br.value, 10) || 0;
       save();
@@ -340,6 +368,7 @@ function renderSessions() {
     const tdAct = document.createElement('td');
     const rem = document.createElement('button');
     rem.textContent = 'Remove';
+    rem.disabled = locked;
     rem.addEventListener('click', () => {
       state.sessions.splice(idx, 1);
       save();
@@ -378,6 +407,94 @@ function initTabs() {
     button.addEventListener('click', () => {
       setActiveTab(button.dataset.panel);
     });
+  });
+}
+
+let lastRenderedLockState = null;
+
+function renderLockControls() {
+  const hasQr = !!state.qrSecretHash;
+  const editWindow = state.settingsLocked && Date.now() < (state.unlockUntil || 0);
+  const locked = isLockedNow();
+
+  if (!hasQr) {
+    lockStatusEl.textContent = 'No lock is set. Your settings can be edited freely.';
+  } else if (locked) {
+    lockStatusEl.textContent = 'Settings are locked. Scan your printed QR code to edit them.';
+  } else if (editWindow) {
+    const mins = Math.max(1, Math.ceil((state.unlockUntil - Date.now()) / 60000));
+    lockStatusEl.textContent =
+      'Unlocked for editing — about ' + mins + ' minute' + (mins === 1 ? '' : 's') + ' remaining.';
+  } else {
+    lockStatusEl.textContent = 'Lock is off, but your printed QR code is still valid.';
+  }
+
+  enableLockBtn.style.display = !hasQr || !state.settingsLocked ? 'inline-block' : 'none';
+  enableLockBtn.textContent = hasQr ? 'Re-enable Lock' : 'Enable Lock & Print QR';
+  unlockQrBtn.style.display = locked ? 'inline-block' : 'none';
+  relockNowBtn.style.display = editWindow ? 'inline-block' : 'none';
+  regenQrBtn.style.display = hasQr && !locked ? 'inline-block' : 'none';
+  disableLockBtn.style.display = hasQr && !locked ? 'inline-block' : 'none';
+
+  applyLockToStaticControls();
+}
+
+function applyLockToStaticControls() {
+  const locked = isLockedNow();
+  modeEl.disabled = locked;
+  document
+    .querySelectorAll('#addPatternForm input, #addPatternForm button, #addExceptionForm input, #addExceptionForm button')
+    .forEach((el) => {
+      el.disabled = locked;
+    });
+  document.getElementById('addSession').disabled = locked;
+}
+
+// Re-render the editable tables only when the lock state actually flips, so a
+// periodic refresh never wipes text the user is typing.
+function refreshLockUi() {
+  const locked = isLockedNow();
+  renderLockControls();
+  if (locked !== lastRenderedLockState) {
+    lastRenderedLockState = locked;
+    renderPatterns();
+    renderExceptions();
+    renderSessions();
+  }
+}
+
+async function stageLockAndPrint(regenerate) {
+  let res;
+  try {
+    res = await browser.runtime.sendMessage({ type: 'enable-lock', regenerate });
+  } catch (e) {
+    return;
+  }
+  if (res && res.staged) {
+    browser.tabs.create({ url: browser.runtime.getURL('pages/print/print.html') });
+  }
+}
+
+function bindLockEvents() {
+  enableLockBtn.addEventListener('click', () => stageLockAndPrint(false));
+  regenQrBtn.addEventListener('click', () => stageLockAndPrint(true));
+  unlockQrBtn.addEventListener('click', () => {
+    browser.tabs.create({
+      url: browser.runtime.getURL('pages/unlock/unlock.html?purpose=settings')
+    });
+  });
+  relockNowBtn.addEventListener('click', () => {
+    browser.runtime.sendMessage({ type: 'relock-now' });
+  });
+  disableLockBtn.addEventListener('click', async () => {
+    if (!window.confirm('This removes the lock and invalidates your printed QR code. Continue?')) {
+      return;
+    }
+    try {
+      await browser.runtime.sendMessage({ type: 'disable-lock' });
+    } catch (e) {
+      // still locked; ignore
+    }
   });
 }
 
@@ -540,6 +657,8 @@ browser.storage.onChanged.addListener((changes, area) => {
   renderExceptions();
   renderSessions();
   updateExceptionsVisibility();
+  lastRenderedLockState = isLockedNow();
+  renderLockControls();
   renderThemeControls();
   applyThemeLocally(state.themeSettings);
 
@@ -550,4 +669,6 @@ browser.storage.onChanged.addListener((changes, area) => {
 
 initTabs();
 bindThemeEvents();
+bindLockEvents();
 load();
+setInterval(refreshLockUi, 15000);

@@ -21,10 +21,11 @@
     <section class="popup-block popup-break">
       <label for="popupDuration">Break (minutes)</label>
       <div class="break-input-row">
-        <input id="popupDuration" type="number" min="1">
+        <input id="popupDuration" type="number" min="1" max="15">
         <button id="popupStart">Start Break</button>
       </div>
       <button id="popupStop" style="display:none;">Stop Break</button>
+      <button id="extraBreak" style="display:none;">Extra Break (scan QR)</button>
       <div id="countdownOverlay" style="display:none;">
         <div id="delayMessage" aria-live="polite">Please wait 15 seconds...</div>
         <div id="delayTimer" aria-live="polite">15 seconds remaining</div>

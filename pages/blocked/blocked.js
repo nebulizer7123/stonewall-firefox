@@ -16,6 +16,8 @@ const continueDelay = document.getElementById('continueDelay');
 const addExcBtn = document.getElementById('addExceptionBtn');
 const excMsg = document.getElementById('blockedExceptionMsg');
 const breakError = document.getElementById('breakError');
+const extraBreakBtn = document.getElementById('extraBreakBtn');
+const cooldownMsg = document.getElementById('cooldownMsg');
 const bodyEl = document.body;
 
 const BREAK_START_DELAY_SECONDS = 15;
@@ -30,6 +32,9 @@ let exceptionPatterns = ['reddit.com/r/*/comments/'];
 let sessions = [];
 let sessionBreakUsage = {};
 let noBreaksRemaining = false;
+let lastBreakEndedAt = 0;
+let breakCooldownMinutes = 20;
+let qrSecretHash = '';
 
 msgEl.textContent = url || 'Unknown URL';
 
@@ -61,14 +66,17 @@ function updateTimer() {
 
 async function startBreak(duration) {
   setBreakError('');
-  const dur = duration || parseInt(durInput.value, 10) || 15;
+  const dur = duration || parseInt(durInput.value, 10) || 5;
   let until;
   try {
     until = await browser.runtime.sendMessage({ type: 'start-break', duration: dur, url });
   } catch (err) {
-    if (err && (err.code === 'break-limit' || err.message === 'break-limit')) {
+    const reason = err && (err.code || err.message);
+    if (reason === 'break-limit') {
       setBreakError('No breaks remaining for this focus session.');
       markNoBreaks(true);
+    } else if (reason === 'break-cooldown') {
+      setBreakError('Breaks are limited to one every ' + (breakCooldownMinutes || 20) + ' minutes.');
     } else {
       setBreakError('Unable to start break. Please try again.');
     }
@@ -100,7 +108,7 @@ function hideDelay() {
 function showDelay(duration) {
   setBreakError('');
   hideDelay();
-  pendingDuration = duration || parseInt(durInput.value, 10) || 15;
+  pendingDuration = duration || parseInt(durInput.value, 10) || 5;
   let remaining = BREAK_START_DELAY_SECONDS;
   if (delayMessage) {
     delayMessage.textContent = `Please wait ${BREAK_START_DELAY_SECONDS} seconds...`;
@@ -129,6 +137,12 @@ continueDelay.addEventListener('click', () => {
 
 btn.addEventListener('click', () => showDelay());
 stopBtn.addEventListener('click', stopBreak);
+extraBreakBtn.addEventListener('click', () => {
+  const dur = parseInt(durInput.value, 10) || 5;
+  location.href = browser.runtime.getURL('pages/unlock/unlock.html') +
+    '?purpose=extra-break&duration=' + dur +
+    (url ? '&url=' + encodeURIComponent(url) : '');
+});
 addExcBtn.addEventListener('click', async () => {
   const pattern = normalizeUrl(url);
   const data = await browser.storage.local.get(['exceptionPatterns']);
@@ -184,18 +198,40 @@ function isOnBreak() {
   return typeof breakUntil === 'number' && breakUntil > Date.now();
 }
 
+function cooldownRemainingMs() {
+  if (!lastBreakEndedAt) return 0;
+  const next = lastBreakEndedAt + (breakCooldownMinutes || 20) * 60000;
+  return Math.max(0, next - Date.now());
+}
+
+function updateCooldownUi() {
+  const rem = isOnBreak() ? 0 : cooldownRemainingMs();
+  if (rem > 0) {
+    const sec = Math.ceil(rem / 1000);
+    cooldownMsg.textContent =
+      'Next break available in ' + Math.floor(sec / 60) + 'm ' + (sec % 60) + 's';
+  } else {
+    cooldownMsg.textContent = '';
+  }
+  applyControls();
+}
+
 function applyControls() {
   const onBreak = isOnBreak();
   const limitActive = noBreaksRemaining && !onBreak;
+  const cooldownActive = !onBreak && cooldownRemainingMs() > 0;
 
   if (onBreak) {
     btn.disabled = true;
     durInput.disabled = true;
     stopBtn.style.display = 'inline-block';
   } else {
-    btn.disabled = limitActive;
-    durInput.disabled = limitActive;
+    btn.disabled = limitActive || cooldownActive;
+    durInput.disabled = limitActive || cooldownActive;
     stopBtn.style.display = 'none';
+  }
+  if (extraBreakBtn) {
+    extraBreakBtn.style.display = qrSecretHash && !onBreak ? 'inline-block' : 'none';
   }
 }
 
@@ -260,23 +296,31 @@ function dateKey(referenceDate = new Date()) {
     'mode',
     'exceptionPatterns',
     'sessions',
-    'sessionBreakUsage'
+    'sessionBreakUsage',
+    'lastBreakEndedAt',
+    'breakCooldownMinutes',
+    'qrSecretHash'
   ]);
   breakUntil = data.breakUntil || 0;
-  breakDuration = (data.breakDuration || 15) * 60000;
-  durInput.value = data.breakDuration || 15;
+  breakDuration = (data.breakDuration || 5) * 60000;
+  durInput.value = data.breakDuration || 5;
   mode = data.mode || 'block';
   exceptionPatterns = data.exceptionPatterns || [];
   sessions = Array.isArray(data.sessions) ? data.sessions : [];
   sessionBreakUsage = data.sessionBreakUsage || {};
+  lastBreakEndedAt = data.lastBreakEndedAt || 0;
+  breakCooldownMinutes = data.breakCooldownMinutes || 20;
+  qrSecretHash = data.qrSecretHash || '';
   updateBreakAvailability();
   updateExceptionButton();
+  updateCooldownUi();
   if (isOnBreak()) {
     updateTimer();
     intervalId = setInterval(updateTimer, 1000);
   } else {
     applyControls();
   }
+  setInterval(updateCooldownUi, 1000);
 })();
 
 browser.storage.onChanged.addListener((changes, area) => {
@@ -285,6 +329,9 @@ browser.storage.onChanged.addListener((changes, area) => {
     if (changes.exceptionPatterns) exceptionPatterns = changes.exceptionPatterns.newValue;
     if (changes.sessions) sessions = changes.sessions.newValue || [];
     if (changes.sessionBreakUsage) sessionBreakUsage = changes.sessionBreakUsage.newValue || {};
+    if (changes.lastBreakEndedAt) lastBreakEndedAt = changes.lastBreakEndedAt.newValue || 0;
+    if (changes.breakCooldownMinutes) breakCooldownMinutes = changes.breakCooldownMinutes.newValue || 20;
+    if (changes.qrSecretHash) qrSecretHash = changes.qrSecretHash.newValue || '';
     if (changes.breakUntil) {
       breakUntil = changes.breakUntil.newValue || 0;
       if (intervalId) {
