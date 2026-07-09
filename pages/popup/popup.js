@@ -299,6 +299,9 @@ function updateExceptionButton() {
   if (exists) {
     exceptionBtn.textContent = 'Already in Exception List';
     exceptionBtn.disabled = true;
+  } else if (isLockedNow()) {
+    exceptionBtn.textContent = 'Scan QR to Add Exception';
+    exceptionBtn.disabled = false;
   } else {
     exceptionBtn.textContent = 'Add to Exception List';
     exceptionBtn.disabled = false;
@@ -312,6 +315,14 @@ function setBreakMsg(message) {
 
 exceptionBtn.addEventListener('click', async () => {
   if (!currentUrl) return;
+  if (isLockedNow()) {
+    // Adding an exception is a settings edit; require a QR scan first.
+    browser.tabs.create({
+      url: browser.runtime.getURL('pages/unlock/unlock.html?purpose=settings')
+    });
+    window.close();
+    return;
+  }
   const pattern = normalizeUrl(currentUrl);
   const data = await browser.storage.local.get(['exceptionPatterns']);
   const list = data.exceptionPatterns || [];

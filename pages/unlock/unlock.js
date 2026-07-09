@@ -110,6 +110,13 @@ async function submitCode(codeText) {
     cancelBtn.textContent = 'Close';
     return;
   }
+  if (returnUrl) {
+    // Came from a blocked page (e.g. to add an exception); go back so the
+    // now-unlocked controls are available.
+    setStatus('Settings unlocked. Returning…');
+    location.href = returnUrl;
+    return;
+  }
   setStatus('Settings unlocked for 15 minutes.');
   cancelBtn.textContent = 'Close';
   doneBtn.style.display = 'inline-block';

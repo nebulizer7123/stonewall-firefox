@@ -231,6 +231,9 @@ browser.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 
 browser.runtime.onMessage.addListener((msg) => {
   if (msg.type === 'unblockUrl' && msg.url) {
+    if (!settingsEditable()) {
+      return Promise.reject({ code: 'locked', message: 'locked' });
+    }
     if (state.mode === 'allow') {
       if (!state.allowPatterns.includes(msg.url)) state.allowPatterns.push(msg.url);
     } else {

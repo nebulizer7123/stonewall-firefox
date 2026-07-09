@@ -35,6 +35,12 @@ let noBreaksRemaining = false;
 let lastBreakEndedAt = 0;
 let breakCooldownMinutes = 20;
 let qrSecretHash = '';
+let settingsLocked = false;
+let unlockUntil = 0;
+
+function isLockedNow() {
+  return settingsLocked && Date.now() >= (unlockUntil || 0);
+}
 
 msgEl.textContent = url || 'Unknown URL';
 
@@ -144,6 +150,12 @@ extraBreakBtn.addEventListener('click', () => {
     (url ? '&url=' + encodeURIComponent(url) : '');
 });
 addExcBtn.addEventListener('click', async () => {
+  if (isLockedNow()) {
+    // Adding an exception is a settings edit; require a QR scan first.
+    location.href = browser.runtime.getURL('pages/unlock/unlock.html') +
+      '?purpose=settings' + (url ? '&url=' + encodeURIComponent(url) : '');
+    return;
+  }
   const pattern = normalizeUrl(url);
   const data = await browser.storage.local.get(['exceptionPatterns']);
   const list = data.exceptionPatterns || [];
@@ -183,6 +195,9 @@ function updateExceptionButton() {
   if (exists) {
     addExcBtn.textContent = 'Already in Exception List';
     addExcBtn.disabled = true;
+  } else if (isLockedNow()) {
+    addExcBtn.textContent = 'Scan QR to Add Exception';
+    addExcBtn.disabled = false;
   } else {
     addExcBtn.textContent = 'Add to Exception List';
     addExcBtn.disabled = false;
@@ -299,7 +314,9 @@ function dateKey(referenceDate = new Date()) {
     'sessionBreakUsage',
     'lastBreakEndedAt',
     'breakCooldownMinutes',
-    'qrSecretHash'
+    'qrSecretHash',
+    'settingsLocked',
+    'unlockUntil'
   ]);
   breakUntil = data.breakUntil || 0;
   breakDuration = (data.breakDuration || 5) * 60000;
@@ -311,6 +328,8 @@ function dateKey(referenceDate = new Date()) {
   lastBreakEndedAt = data.lastBreakEndedAt || 0;
   breakCooldownMinutes = data.breakCooldownMinutes || 20;
   qrSecretHash = data.qrSecretHash || '';
+  settingsLocked = data.settingsLocked || false;
+  unlockUntil = data.unlockUntil || 0;
   updateBreakAvailability();
   updateExceptionButton();
   updateCooldownUi();
@@ -332,6 +351,8 @@ browser.storage.onChanged.addListener((changes, area) => {
     if (changes.lastBreakEndedAt) lastBreakEndedAt = changes.lastBreakEndedAt.newValue || 0;
     if (changes.breakCooldownMinutes) breakCooldownMinutes = changes.breakCooldownMinutes.newValue || 20;
     if (changes.qrSecretHash) qrSecretHash = changes.qrSecretHash.newValue || '';
+    if (changes.settingsLocked) settingsLocked = changes.settingsLocked.newValue || false;
+    if (changes.unlockUntil) unlockUntil = changes.unlockUntil.newValue || 0;
     if (changes.breakUntil) {
       breakUntil = changes.breakUntil.newValue || 0;
       if (intervalId) {
